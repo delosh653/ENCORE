@@ -1,0 +1,8 @@
+Organism,Scientific Organism,Short Organism Name,Taxonomy Number,COMMON,ENSEMBL,ENSEMBLPROT,ENSEMBLTRANS,ENTREZID,FLYBASE,GID,IPI,SGD,SYMBOL,UNIGENE,UNIPROT
+Mouse,Mus musculus,Mm,10090,F,T,T,T,T,F,F,T,F,T,T,T
+Human,Homo sapiens,Hs,9606,F,T,T,T,T,F,F,T,F,T,T,T
+Neurospora,Neurospora crassa,Nc,5141,F,F,F,F,F,F,T,F,F,F,F,F
+Fruit fly,Drosophila melanogaster,Dm,7227,F,T,T,T,T,T,F,F,F,T,T,T
+Mosquito,Anopheles gambiae,Ag,7165,F,T,T,T,T,F,F,F,F,T,T,T
+Baker's yeast,Saccharomyces cerevisiae,Sc,4932,T,T,T,T,T,F,F,F,T,F,F,T
+E. coli,Escherichia coli K12 substr MG1655,EcK12,511145,F,F,F,F,T,F,F,F,F,T,F,F

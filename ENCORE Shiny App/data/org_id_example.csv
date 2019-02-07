@@ -1,0 +1,8 @@
+Organism,Scientific Name,Yeast Symbol      ,Ensembl,Ensembl_Protein,Ensembl_Transcript,Entrez ID,Flybase,NCU Number,IPI,SGD,Gene Symbol,Unigene,Uniprot
+Mouse,Mus musculus,,ENSMUSG00000020038,ENSMUSP00000099398,ENSMUST00000138942,53321,,,IPI00338983,,Cry1,Mm.474527,O54991
+Human,Homo sapiens,,ENSG00000175164,ENSP00000496236,ENST00000645810,1407,,,IPI00002540,,CRY1,Hs.151573,A2I2P0
+Neurospora,Neurospora crassa,,,,,,,NCU02265,,,,,
+Fruit fly,Drosophila melanogaster,,FBgn0003068,FBpp0070455,FBtr0070477,31251,FBgn0003068,,,,"per, CG16892",Dm.65,M9PGJ3
+Mosquito,Anopheles gambiae,,AGAP011096,AGAP011096-PA,AGAP011096-RA,1270764,,,,,"CRY1_ANOGA, CPR23, AgaP_AGAP011165, Oamb",Aga.31086,Q7PYI7
+Baker's yeast,Saccharomyces cerevisiae,"HLT4, TRAPP subunit TRS23",YNR072W,YNR072W_mRNA,YNR072W_mRNA,855809,,,,S000005355,,,P09938
+E. coli,Escherichia coli K12 substr MG1655,,,,,946177,,,,,ydhR,,
