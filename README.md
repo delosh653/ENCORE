@@ -1,7 +1,7 @@
 # Welcome to ENCORE!
 
 <p align="center">
-<img src="ENCORE Shiny App/www/ont_map.PNG" width="300" />  <img src="ENCORE Shiny App/www/ont_nav.PNG" width="300" />  <img src="ENCORE Shiny App/www/group_comp.PNG" width="300" />
+<img src="ENCORE Shiny App/www/ont_map.PNG" width="275" />  <img src="ENCORE Shiny App/www/ont_nav.PNG" width="275" />  <img src="ENCORE Shiny App/www/group_comp.PNG" width="275" />
 </p>
 
 This is the second step in the PAICE (Pipeline for Amplitude Integration of Circadian Exploration) Suite! This suite of tools provides high-throughput applications for circadian, ultradian, and infradian rhythms. The first step, ECHO, can be found [here](https://github.com/delosh653/ECHO), and must be run before using this application.
