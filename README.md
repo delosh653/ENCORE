@@ -1,7 +1,7 @@
 # Welcome to ENCORE!
 
 <p align="center">
-<img src="ENCORE Shiny App/www/ont_nav.PNG" width="400" />  <img src="ENCORE Shiny App/www/group_comp.PNG" width="400" />
+<img src="ENCORE Shiny App/www/ont_map.PNG" width="300" />  <img src="ENCORE Shiny App/www/ont_nav.PNG" width="300" />  <img src="ENCORE Shiny App/www/group_comp.PNG" width="300" />
 </p>
 
 This is the second step in the PAICE (Pipeline for Amplitude Integration of Circadian Exploration) Suite! This suite of tools provides high-throughput applications for circadian, ultradian, and infradian rhythms. The first step, ECHO, can be found [here](https://github.com/delosh653/ECHO), and must be run before using this application.
@@ -61,6 +61,7 @@ install.packages("r2d3")
 install.packages("data.table")
 install.packages("jsonlite")
 install.packages("stringr")
+install.packages("igraph")
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -99,13 +100,22 @@ ENCORE's interface is divided into two sections: **Explore** and **Create Encore
 Within the **Create ENCORE File** tab, you can upload your ECHO visualization file results (.csv) and enter ontology enrichment information, such as the organism, gene ID type, desired significance level and adjustment, and period range restrictions. Note that this step takes some time. You can then download your results as an .RData file, which appears in the 'downloads' folder of the ENCORE Shiny App folder.
 
 <p align="center">
+<img src="ENCORE Shiny App/www/ont_map.PNG" width="400" />
+
+<p align="center">
+<img src="ENCORE Shiny App/www/hover_ont_map_node.png" width="200px">  <img src="ENCORE Shiny App/www/hover_ont_map_link.png" width="200px"> 
+</p>
+
+In the **Explore** tab, simply upload the ENCORE .RData file from your results and select desired ontologies and categories. You can then see a sankey, or flow, diagram showing the path to a selected ontological term for a specific AC category. Possible paths from the ontological type to the selected term flow from left to right. Not significant terms are grey and significant terms are colored. To jump to a specific ontological category's children, click its bar node. Hover and click on bars and links for more information.
+
+<p align="center">
 <img src="ENCORE Shiny App/www/ont_nav.PNG" width="400" />
 
 <p align="center">
 <img src="ENCORE Shiny App/www/hover_fc_bar.png" width="200px">  <img src="ENCORE Shiny App/www/hover_ont_bar.png" width="200px"> 
 </p>
 
-In the **Explore** tab, simply upload the ENCORE .RData file from your results and select desired ontologies and categories. You can then explore a layered bar graph in the Ontology Explorer, representing the ontologies significantly enriched for the categories you chose. You can then hover and click for more information on enirchments and ontological terms. 
+You can then explore a layered bar graph in the Ontology Explorer, representing the ontologies significantly enriched for the categories you chose. You can then hover and click for more information on enirchments and ontological terms. 
 
 <p align="center">
 <img src="ENCORE Shiny App/www/group_comp.PNG" width="400" />
