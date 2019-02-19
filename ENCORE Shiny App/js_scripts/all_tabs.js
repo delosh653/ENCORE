@@ -45,6 +45,10 @@ if ((typeof options.from_genes)==="string"){
   options.from_genes = [options.from_genes];
 }
 
+if ((typeof options.tot_fc_cats) === "number"){
+  options.tot_fc_cats = [options.tot_fc_cats];
+}
+
 if (options.which_camp === "ont_nav"){
   
   
@@ -1101,7 +1105,6 @@ if (options.which_camp === "ont_nav"){
   	  // if the color is connected to itself, we make it darker
   	  if (cat === cat_t){
   	    
-  	    console.log(options.color_pal_dark);
   	    return color_dark(options.fc_cats.indexOf(cat)); // d3.rgb(color(options.fc_cats.indexOf(cat))).darker();
   	  } else {
   	    return color(options.fc_cats.indexOf(cat)); 
@@ -1212,7 +1215,6 @@ if (options.which_camp === "ont_nav"){
   	var __g = groups[i];
   	
   	if (options.tot_fc_cats[i]!==undefined && options.tot_fc_cats[i] > 0){
-  	
   		var arc1 = d3.arc()
   			.innerRadius(outerRadius)
   			.outerRadius(outerRadius + 10)
@@ -1222,7 +1224,8 @@ if (options.which_camp === "ont_nav"){
   		g.append("path")
   		  .attr("d", arc1)
   		  .attr('fill', __g.color)
-  		  .attr('id', 'groupId' + i).on("mouseover", function(d,ii){
+  		  .attr('id', 'groupId' + i)
+  		  .on("mouseover", function(d,ii){
     		  fadeGroup(0,arc_inds[Number(this.id[this.id.length-1])]);
     		  fadeHeatArcGroup(0,arc_inds[Number(this.id[this.id.length-1])]);
         })
@@ -1465,4 +1468,138 @@ if (options.which_camp === "ont_nav"){
       return p.matrixTransform(this.node.getScreenCTM().inverse())
   }
   */
-} 
+} else if (options.which_camp == "ont_map"){
+  
+  svg.selectAll("*").remove();
+  
+  format = function(d){
+    const f = d3.format(",.0f");
+    return function(d) {return f(d)};
+  };
+  
+  color = function(name){
+    col_sig = options.no_sig_color;
+    for (key = 0; key < options.all_sig.name.length; key++){
+      if (options.all_sig.name[key] == name){
+        if (options.all_sig.is_sig[key]){
+          col_sig = options.sig_color;
+        }
+        break;
+      }
+    }
+    
+    return col_sig;
+  };
+  
+  
+  sankey = function(data){
+    const sankey = d3.sankey()
+        .nodeWidth(15)
+        .nodePadding(10)
+        .extent([[1, 1], [width - 1, height - 5]]);
+        
+    return sankey({nodes: data.nodes, links: data.links});
+    
+  };
+  
+  
+  const tot_sankey = sankey(data);
+  const nodes = tot_sankey.nodes;
+  const links = tot_sankey.links;
+  
+  const link = svg.append("g")
+      .attr("fill", "none")
+      .attr("stroke-opacity", 0.5)
+    .selectAll("g")
+    .data(links)
+    .enter().append("g")
+      .style("mix-blend-mode", "multiply")
+      .on("mouseover", function(d){
+        d3.select(this).attr("stroke-opacity", 0.7);
+      })
+      .on("mouseout", function(d){
+        d3.select(this).attr("stroke-opacity", 0.5);
+      });
+      
+  var edgeColor = "input";
+  
+  link.append("path")
+      .attr("d", d3.sankeyLinkHorizontal())
+      .attr("stroke", function(d) {
+        return (edgeColor === "input" ? color(d.source.name) 
+            : color(d.target.name)
+        );
+      })
+      .attr("stroke-width", function(d){return Math.max(1, d.width)});
+  
+  link.append("title")
+      .text(function(d) {return d.source.name + " -> " + 
+                d.target.name});
+  
+  svg.append("g")
+    .selectAll("rect")
+    .data(nodes)
+    .enter().append("rect")
+      .attr("stroke", function(d){return color(d.name)})
+      .attr("x", function(d) { return d.x0 })
+      .attr("y", function(d) {return d.y0})
+      .attr("height", function(d) {return d.y1 - d.y0})
+      .attr("width", function(d) {return d.x1 - d.x0})
+      .attr("fill", function(d) {return color(d.name)})
+      .on("click",function(d){
+        go_id = "";
+        for (key = 0; key < options.all_sig.name.length; key++){
+          if (options.all_sig.name[key] == d.name){
+            go_id = options.all_sig.go_name[key];
+            break;
+          }
+        }
+        
+  		  Shiny.setInputValue(
+    			"new_path", // input name
+    			go_id, // input value
+    			{priority: "event"}
+  		  );
+        
+      })
+    .append("title")
+      .text(function(d) {return d.name});
+  
+  svg.append("g")
+      .style("font", "12px sans-serif")
+    .selectAll("text")
+    .data(nodes)
+    .enter().append("text")
+      .attr("dy", function(d){
+        if (d.x0 < width / 2){ // if we put it below bar
+          return "0.5em";
+        } else { // versus over bar
+          return "0.1em";
+        }
+      })
+      .attr("text-anchor", "middle")//function(d) {d.x0 < width / 2 ? "start" : "end"})
+      .attr("fill", "#FFF")
+      .attr("transform", function(d){
+        xval = d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6;
+        yval = (d.y1 + d.y0) / 2;
+        
+        return "translate("+xval+","+yval+") rotate(270)";
+      })
+      .text(function(d) {return d.name})
+      .on("click",(function(d){
+        go_id = "";
+        for (key = 0; key < options.all_sig.name.length; key++){
+          if (options.all_sig.name[key] == d.name){
+            go_id = options.all_sig.go_name[key];
+            break;
+          }
+        }
+        
+    	  Shiny.setInputValue(
+    		"go_url", // input name
+    		go_id, // input value
+    		{priority: "event"}
+    	  )})
+    	);
+  
+}
