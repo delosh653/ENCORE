@@ -9,12 +9,22 @@ svg.attr("id","mysvg");
 var wid_offset = $(window).width() - width;
 var height_offset = 120; // through testing // $(document).height() - height;
 
+svg.selectAll("*").remove();
+
 if ((typeof options.color_pal)==="string"){
   options.color_pal = [options.color_pal];
 }
 
 if ((typeof options.color_pal_dark)==="string"){
   options.color_pal_dark = [options.color_pal_dark];
+}
+
+if ((typeof options.color_pal_chord)==="string"){
+  options.color_pal_chord = [options.color_pal_chord];
+}
+
+if ((typeof options.color_pal_dark_chord)==="string"){
+  options.color_pal_dark_chord = [options.color_pal_dark_chord];
 }
 
 if ((typeof options.path_trace)==="string"){
@@ -49,12 +59,32 @@ if ((typeof options.tot_fc_cats) === "number"){
   options.tot_fc_cats = [options.tot_fc_cats];
 }
 
+if ((typeof options.fc_rep) === "string"){
+  options.fc_rep = [options.fc_rep];
+}
+
+svg.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill", theme.background);
+
+if (options.togg_border){
+  var borderPath = svg.append("rect")
+         			.attr("x", 0)
+         			.attr("y", 0)
+         			.attr("height", height)
+         			.attr("width", width)
+         			.style("stroke", "#e0e0e0")
+         			.style("fill", "none")
+       			.style("stroke-width", 2);
+}
+
 if (options.which_camp === "ont_nav"){
   
   
   // get the widths for each bar
   
-  svg.selectAll("*").remove();
+  //svg.selectAll("*").remove();
   
   var pad_wid = 300;
   var pad_height_top = 150; // remember y is reversed, so "top" is bottom
@@ -72,7 +102,7 @@ if (options.which_camp === "ont_nav"){
   	.style("width", "auto")
   	.style("height", "auto")
   	.style("padding", "5px")
-  	.style("font", "16px sans-serif")
+  	.style("font", options.font_size +"px sans-serif")
   	.style("background", "#a08ffc")
   	.style("border", "2px")
   	.style("border-style", "solid")
@@ -91,7 +121,7 @@ if (options.which_camp === "ont_nav"){
   	.style("width", "auto")
   	.style("height", "auto")
   	.style("padding", "5px")
-  	.style("font", "16px sans-serif")
+  	.style("font", options.font_size +"px sans-serif")
   	.style("background", "#fcfa83")
   	.style("border", "2px")
   	.style("border-style", "solid")
@@ -119,6 +149,8 @@ if (options.which_camp === "ont_nav"){
   // we need to calculate the maximum y-value
   // across all our layers, so we find the biggest
   // end value
+  
+  
   var maxY = d3.max(stacked, function(d) {
     if ((typeof options.fc_cats_go) !== "string"){
   	  return d3.max(d, function(d) {
@@ -156,17 +188,17 @@ if (options.which_camp === "ont_nav"){
     .attr("font-size",16)
     .attr("class", "y axis")
     .attr("transform", "translate("+(pad_wid/2-10)+", 0)")
-    //.attr("stroke","white")
+    //.attr("stroke",theme.foreground)
     .call(function (g) { 
       return g.selectAll(".domain")
-        .attr("stroke","#FFF");
+        .attr("stroke",theme.foreground);
     })
     .call(function (g) {
       return g.selectAll(".tick line")
-        .attr("stroke","#FFF");
+        .attr("stroke",theme.foreground);
     })
     .selectAll(".tick text")
-      .attr("fill","#FFF");
+      .attr("fill",theme.foreground);
       //.attr("stroke-dasharray", "2,2");
   
   svg.append("g")
@@ -174,17 +206,17 @@ if (options.which_camp === "ont_nav"){
     .attr("font-size",16)
     .attr("class", "x axis")
     .attr("transform", "translate("+cent_height+10+", 0)")
-    //.attr("stroke","white")
+    //.attr("stroke",theme.foreground)
     .call(function (g) { 
       return g.selectAll(".domain")
-        .attr("stroke","#FFF");
+        .attr("stroke",theme.foreground);
     })
     .call(function (g) {
       return g.selectAll(".tick line")
-        .attr("stroke","#FFF");
+        .attr("stroke",theme.foreground);
     })
     .selectAll(".tick text")
-      .attr("fill","#FFF");
+      .attr("fill",theme.foreground);
   
   svg.select('svg.stack');
   
@@ -266,14 +298,16 @@ if (options.which_camp === "ont_nav"){
   				.style("background", options.color_pal[Number(d3.select(this).attr("id"))]);
   		    
   				//.style("background",  color(options.fc_cats.indexOf(cat)));
-  		var htmlstr = "Fraction Annotated: "+ ((d[1]-d[0]).toFixed(3));
+  		var htmlstr = "Fraction Annotated: "+ ((d[1]-d[0]).toFixed(4));
   		var f = Number(d3.select(this).attr("id"));
+  		
   		
   		pv = "Pval_" + options.fc_cats_go[f].substring(4,options.fc_cats_go[f].length);
   		fe = "FE_" + options.fc_cats_go[f].substring(4,options.fc_cats_go[f].length);
+  		
   		htmlstr += "<br/>P-value: " + 
-  			d.data[pv].toFixedDown(3) + "<br/>Fold Enrichment: " + 
-  			d.data[fe].toFixedDown(3) + "<br/>";
+  			writeScientificNum(d.data[pv],4) + "<br/>Fold Enrichment: " + 
+  			d.data[fe].toFixedDown(4) + "<br/>";
   		
   		div.html(htmlstr);//+options.fc_hours_shifted[i].toFixed(3));
   	})
@@ -327,7 +361,7 @@ if (options.which_camp === "ont_nav"){
   		
   	})
   	.attr("font-family", "sans-serif")
-  	.attr("font-size", "16px")
+  	.attr("font-size", options.font_size +"px")
   	.attr("fill", "black");
   
   // for all the legends
@@ -391,7 +425,7 @@ if (options.which_camp === "ont_nav"){
   				.style("background",pie_color(d.data.GO_Term));
   				
   			var htmlstr = d.data.GO_Term + 
-  				"<br/>Total Fraction Annotated: " + d.data.Tot_Genes.toFixedDown(3);
+  				"<br/>Total Fraction Annotated: " + d.data.Tot_Genes.toFixedDown(4);
   			var pv = "";
   			var fe = "";
   			
@@ -437,7 +471,7 @@ if (options.which_camp === "ont_nav"){
   				.style("background",pie_color(d.data.GO_Term));
   				
   			var htmlstr = d.data.GO_Term + 
-  				"<br/>Total Fraction Annotated: " + d.data.Tot_Genes.toFixedDown(3);
+  				"<br/>Total Fraction Annotated: " + d.data.Tot_Genes.toFixedDown(4);
   			var pv = "";
   			var fe = "";
   			
@@ -455,7 +489,8 @@ if (options.which_camp === "ont_nav"){
     //.attr("y", 9)
     .attr("dy", "1.5em")
     .attr("font-family", "sans-serif")
-  	.attr("font-size", "16px")
+  	.attr("font-size", options.font_size +"px")
+		.attr("fill", theme.foreground)
     .text(function(d) { 
       if (options.sig === "Significant"){
   			return "*" + d.data.GO_Term ;
@@ -500,26 +535,28 @@ if (options.which_camp === "ont_nav"){
   	  .attr("font-family", "sans-serif")
   		.attr("x", -width/2+2)
   		.attr("y", function(d,i) {return height/2-84+(20*i)})
-  		.attr("fill", "white")
+  		.attr("fill", theme.foreground)
   		.text(function(d) {return d});
   
   // names on the top corner of the screen
-  var max_name = Math.max.apply(null,options.path_trace.map(function (x) {return x.length}));
-  var legend_name = g.selectAll(null)
-  	.data(options.path_trace)
-  	.enter().append("text")
-  	  .attr("text-anchor", "end")
-  		.attr("font-family", "sans-serif")
-  		.attr("font-size", "16px")
-  		.attr("font-weight", function(d,i){
-  		  if (i === 0){
-  		    return "bold";
-  		  }
-  		})
-  		.attr("x", width/2-(max_name))
-  		.attr("y", function(d,i) {return -height/2+20+(20*i)})
-  		.attr("fill", "white")
-  		.text(function(d) {return d});
+  if (options.togg_path){ // toggle based on whether path is wanted or not
+    var max_name = Math.max.apply(null,options.path_trace.map(function (x) {return x.length}));
+    var legend_name = g.selectAll(null)
+    	.data(options.path_trace)
+    	.enter().append("text")
+    	  .attr("text-anchor", "end")
+    		.attr("font-family", "sans-serif")
+    		.attr("font-size", "16px")
+    		.attr("font-weight", function(d,i){
+    		  if (i === 0){
+    		    return "bold";
+    		  }
+    		})
+    		.attr("x", width/2-(max_name))
+    		.attr("y", function(d,i) {return -height/2+20+(20*i)})
+    		.attr("fill", theme.foreground)
+    		.text(function(d) {return d});
+  }
   
   if ((typeof options.fc_full_names)==="string"){
     options.fc_full_names = [options.fc_full_names];
@@ -559,6 +596,7 @@ if (options.which_camp === "ont_nav"){
     .attr("y", 9)
     .attr("dy", "0.35em")
     .attr("font-family", "sans-serif")
+		.attr("fill", theme.foreground)
   	.attr("font-size", "16px")
     .text(function(d) { if (d !== ""){return d}; });
   
@@ -573,7 +611,7 @@ if (options.which_camp === "ont_nav"){
   			.attr("font-size", "50px")
   			.attr("x", 50)
   			.attr("y", height/2 - 10)
-  			.attr("fill", "white")
+  			.attr("fill", theme.foreground)
   			.text("*")
   			.on("click", function(d){
   				var str = "";
@@ -601,7 +639,7 @@ if (options.which_camp === "ont_nav"){
   			.attr("font-size", "30px")
   			.attr("x", 50)
   			.attr("y", height/2+10)
-  			.attr("fill", "white")
+  			.attr("fill", theme.foreground)
   			.text("<=")
   			.on("click", function(d){
     		  Shiny.setInputValue(
@@ -610,6 +648,21 @@ if (options.which_camp === "ont_nav"){
     			{priority: "event"}
     		  );
     		});
+    		
+  // fraction annotated y axis
+  svg.append("g")
+  	.attr('class', 'legend')
+  	.selectAll('text')
+  	.data([0])
+  		.enter().append("text")
+  			.attr("text-anchor","middle")
+  			.attr("font-family", "sans-serif")
+  			.attr("font-size", options.font_size +"px")
+  			.attr("transform", function(d){
+  			  return "translate("+100+","+height/2+") rotate(270)"
+  			})
+  			.attr("fill", theme.foreground)
+  			.text("Fraction Annotated");
   
     
   // source: https://stackoverflow.com/questions/4912788/truncate-not-round-off-decimal-numbers-in-javascript
@@ -618,10 +671,17 @@ if (options.which_camp === "ont_nav"){
   		m = this.toString().match(re);
   	return m ? parseFloat(m[1]) : this.valueOf();
   };
+  
+  //source: https://stackoverflow.com/questions/11124451/how-can-i-convert-numbers-into-scientific-notation
+  function writeScientificNum(p_num, p_precision) {
+    var n = Math.round(Math.log10(p_num));
+  	var m = (p_num * (Math.pow(10,Math.abs(n)))).toFixedDown(p_precision);
+  	return m.toString() + ' x 10<sup>' + n.toString() + '</sup>';
+  }
 } else if (options.which_camp === "group_comp" && options.curr != ""){
     
   //d3.selectAll("svg > *").remove();
-  svg.selectAll("*").remove();
+  //svg.selectAll("*").remove();
   
   var split_perc = 0.37;
   
@@ -636,7 +696,7 @@ if (options.which_camp === "ont_nav"){
 		.style("width", "auto")
 		.style("height", "auto")
 		.style("padding", "5px")
-		.style("font", "12px sans-serif")
+		.style("font", options.font_size +"px sans-serif")
 		.style("background", "#a08ffc")
 		.style("border", "2px")
 		.style("border-style", "solid")
@@ -655,6 +715,14 @@ if (options.which_camp === "ont_nav"){
   	outerRadius = Math.min(width, height) / 2,
   	g = svg.append("g")
   		.attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+  
+  // PUT A BLACK CIRCLE UNDERNEATH (for good with visualizations)
+  var circle = g.append("circle")
+                  .attr("cx", 0)
+                  .attr("cy", 0)
+                  .attr("r", innerRadius)
+                  .attr("fill", "black");
+  
   
   var x = d3.scaleBand()
   	.range([0, 2 * Math.PI])
@@ -779,6 +847,7 @@ if (options.which_camp === "ont_nav"){
     .attr("font-family", "sans-serif")
     .attr("x", 24)
     .attr("y", 9)
+		.attr("fill", theme.foreground)
     .attr("dy", "0.35em")
     .text(function(d) { if (d !== ""){return d} });
   
@@ -820,7 +889,7 @@ if (options.which_camp === "ont_nav"){
   	.style("width", "auto")
   	.style("height", "auto")
   	.style("padding", "5px")
-  	.style("font", "12px sans-serif")
+  	.style("font", options.font_size +"px sans-serif")
   	.style("background", "pink")
   	.style("border", "2px")
   	.style("border-style", "solid")
@@ -840,7 +909,7 @@ if (options.which_camp === "ont_nav"){
   	.style("width", "auto")
   	.style("height", "auto")
   	.style("padding", "5px")
-  	.style("font", "12px sans-serif")
+  	.style("font", options.font_size +"px sans-serif")
   	.style("background", "steelblue")
   	.style("border", "2px")
   	.style("border-style", "solid")
@@ -880,11 +949,11 @@ if (options.which_camp === "ont_nav"){
   }
   
   var color = d3.scaleOrdinal()
-    .range(options.color_pal);
+    .range(options.color_pal_chord);
   	//s.range(color_array.slice(0,options.fc_cats.length).reverse());
   
   var color_dark = d3.scaleOrdinal()
-    .range(options.color_pal_dark);
+    .range(options.color_pal_dark_chord);
   
   var gstep = g.append("g")
     .attr("transform", "translate(" + 0 + "," + 0 + ")")
@@ -919,13 +988,13 @@ if (options.which_camp === "ont_nav"){
   	  var cat = options.from_fc_cat[ind];
   	  
   	  arc_inds[options.fc_cats.indexOf(cat)].push(i);
-  	  return color(options.fc_cats.indexOf(cat)); 
+  	  return color(options.fc_rep.indexOf(cat)); 
   	})
   	.style("stroke", function(d) { 
   	  var genen = options.genes[d.index];
   	  var ind = options.from_genes.indexOf(genen);
   	  var cat = options.from_fc_cat[ind];
-  	  return d3.rgb(color(options.fc_cats.indexOf(cat))).darker().darker(); })
+  	  return d3.rgb(color(options.fc_rep.indexOf(cat))).darker().darker(); })
   	.attr("d", arc)
   	.on("mouseover", function(d,i){
   	  clearTimeout(set_time_const);
@@ -938,15 +1007,16 @@ if (options.which_camp === "ont_nav"){
   			.style("opacity", 0.9)
   			.style("left", (d3.event.pageX-10) + "px")     
   			.style("top", (d3.event.pageY-10) + "px")
-  			.style("background",  color(options.fc_cats.indexOf(cat)));
+  			.style("background",  color(options.fc_rep.indexOf(cat)));
   			
   		var htmlstr = options.genes[d.index]+" ("+keep[i].length+")";
 			
 			div_arc.html(htmlstr);
+			
   	  fade(0,i);
   	  fadeHeatArc(0,i);
   	  
-  	  set_time_const = setTimeout(function() { }, 1000);
+  	  set_time_const = setTimeout(function() { }, 100);
     })
     .on("mouseout", function(d,i) {
       clearTimeout(set_time_const);
@@ -954,11 +1024,10 @@ if (options.which_camp === "ont_nav"){
       div_arc.transition()        
           .duration(0)      
           .style("opacity", 0);
-      
       fade(1,i);
       fadeHeatArc(1,i);
       
-      set_time_const = setTimeout(function() { }, 1000);
+      set_time_const = setTimeout(function() { }, 100);
     })
     .on("click",(function(d){
 			  Shiny.setInputValue(
@@ -967,7 +1036,8 @@ if (options.which_camp === "ont_nav"){
 				{priority: "event"}
 			  )})
 			);
-  
+    
+    
     // FUNCTIONS FOR FADING CHORDS
     function fade(opacity,our_ind){
       svg.selectAll(whichToFade(our_ind))
@@ -979,7 +1049,7 @@ if (options.which_camp === "ont_nav"){
     function whichToFade(our_ind){
       var fade_these = [];
       
-      for (var i = 0; i < options.from_genes.length; i++){
+      for (var i = 0; i < options.tot_chords; i++){
         if (!keep[our_ind].includes(i)){
           fade_these.push("#rib_chords"+i);
         }
@@ -1000,7 +1070,7 @@ if (options.which_camp === "ont_nav"){
       
       var all_keep = [].concat.apply([],mult_ind.map(function(i){return keep[i]}))
       
-      for (var i = 0; i < options.from_genes.length; i++){
+      for (var i = 0; i < options.tot_chords; i++){
         if (!all_keep.includes(i)){
           fade_these.push("#rib_chords"+i);
         }
@@ -1104,10 +1174,11 @@ if (options.which_camp === "ont_nav"){
   	  
   	  // if the color is connected to itself, we make it darker
   	  if (cat === cat_t){
-  	    
-  	    return color_dark(options.fc_cats.indexOf(cat)); // d3.rgb(color(options.fc_cats.indexOf(cat))).darker();
+  	    // STOP HERE
+  	    //console.log(options.fc_rep + " " + options.fc_cats + " " + cat + " " + options.fc_cats.indexOf(cat) + " " + options.fc_rep.indexOf(cat) + " " + color_dark(options.fc_cats.indexOf(cat)) + " " + color_dark(options.fc_rep.indexOf(cat)))
+  	    return color_dark(options.fc_rep.indexOf(cat)); // d3.rgb(color(options.fc_cats.indexOf(cat))).darker();
   	  } else {
-  	    return color(options.fc_cats.indexOf(cat)); 
+  	    return color(options.fc_rep.indexOf(cat)); 
   	  }
     })
     .attr("stroke", function(d) { 
@@ -1115,9 +1186,10 @@ if (options.which_camp === "ont_nav"){
       var ind = options.from_genes.indexOf(genen);
       var cat = options.from_fc_cat[ind];
       
-      return d3.rgb(color(options.fc_cats.indexOf(cat))).darker().darker(); })
+      return d3.rgb(color(options.fc_rep.indexOf(cat))).darker().darker(); })
     .attr("fill-opacity", 0.9)
     .on("mouseover", function(d,i){
+  	  clearTimeout(set_time_const);
       // WNDOW RESIZING IS THE PROBLEM
       var wid_offset = $(window).width() - width;
       
@@ -1143,14 +1215,17 @@ if (options.which_camp === "ont_nav"){
   			.style("opacity", 0.9)
   			.style("left", (d3.event.pageX-10) + "px")     
   			.style("top", (d3.event.pageY-10) + "px")
-  			.style("background",  color(options.fc_cats.indexOf(cat)));
+  			.style("background",  color(options.fc_rep.indexOf(cat)));
   			
   		div_chord.html(htmlstr);
   		
       fade(0,findOurInd(i, which_col === "target"));
       fadeHeatArcGroup(0,[d.source.index,d.target.index]);
+      
+      set_time_const = setTimeout(function() { }, 100);
     })
     .on("mouseout", function(d,i) {
+  	  clearTimeout(set_time_const);
       
       var wid_offset = $(window).width() - width;
       var which_col = which_gene(d3.event.pageX - wid_offset, d3.event.pageY - height_offset, 
@@ -1163,6 +1238,8 @@ if (options.which_camp === "ont_nav"){
       // STOP HERE
       fade(1,findOurInd(i, which_col === "target"));
       fadeHeatArcGroup(1,[d.source.index,d.target.index]);
+      
+      set_time_const = setTimeout(function() { }, 100);
     })
     .on("click",(function(d,i){
       var wid_offset = $(window).width() - width;
@@ -1226,12 +1303,18 @@ if (options.which_camp === "ont_nav"){
   		  .attr('fill', __g.color)
   		  .attr('id', 'groupId' + i)
   		  .on("mouseover", function(d,ii){
+  	      clearTimeout(set_time_const);
     		  fadeGroup(0,arc_inds[Number(this.id[this.id.length-1])]);
     		  fadeHeatArcGroup(0,arc_inds[Number(this.id[this.id.length-1])]);
+      
+          set_time_const = setTimeout(function() { }, 100);
         })
         .on("mouseout", function(d,ii) {
+  	      clearTimeout(set_time_const);
           fadeGroup(1,arc_inds[Number(this.id[this.id.length-1])]);
           fadeHeatArcGroup(1,arc_inds[Number(this.id[this.id.length-1])]);
+      
+          set_time_const = setTimeout(function() { }, 100);
         });
         
   		// Add a text label.
@@ -1290,7 +1373,7 @@ if (options.which_camp === "ont_nav"){
     .attr('d', function(d) {return "M 0 0 L 0 18 L 18 0 Z";})
     .attr("fill", function(d,i) {
   	  if (d !== ""){ 
-  	  return color(d); } 
+  	  return options.color_pal[i]; } 
   	  else {return "#000000"}
   	});
   	
@@ -1327,27 +1410,31 @@ if (options.which_camp === "ont_nav"){
   legend_fc.append("text")
     .attr("x", 24)
     .attr("y", 9)
+		.attr("fill", theme.foreground)
     .attr("dy", "0.35em")
     .attr("font-family", "sans-serif")
     .text(function(d) { if (d !== ""){return d} });
   
   //var go_name = [options.go_name];
-  var max_name = Math.max.apply(null,options.path_trace.map(function (x) {return x.length}));
-  var legend_name = g.selectAll(null)
-  	.data(options.path_trace)
-  	.enter().append("text")
-  	  .attr("text-anchor", "end")
-  		.attr("font-family", "sans-serif")
-  		.attr("font-size", "16px")
-  		.attr("font-weight", function(d,i){
-  		  if (i === 0){
-  		    return "bold";
-  		  }
-  		})
-  		.attr("x", width/2-(max_name))
-  		.attr("y", function(d,i) {return -height/2+20+(20*i)})
-  		.attr("fill", "white")
-  		.text(function(d) {return d})
+  
+  if (options.togg_path){ // toggle based on whether path is wanted or not
+    var max_name = Math.max.apply(null,options.path_trace.map(function (x) {return x.length}));
+    var legend_name = g.selectAll(null)
+    	.data(options.path_trace)
+    	.enter().append("text")
+    	  .attr("text-anchor", "end")
+    		.attr("font-family", "sans-serif")
+    		.attr("font-size", "16px")
+    		.attr("font-weight", function(d,i){
+    		  if (i === 0){
+    		    return "bold";
+    		  }
+    		})
+    		.attr("x", width/2-(max_name))
+    		.attr("y", function(d,i) {return -height/2+20+(20*i)})
+    		.attr("fill", theme.foreground)
+    		.text(function(d) {return d})
+  }
   	
   var instructions = [];
     //["Each chord indicates a protein-protein interaction",
@@ -1360,7 +1447,7 @@ if (options.which_camp === "ont_nav"){
   	  .attr("font-family", "sans-serif")
   		.attr("x", -width/2+2)
   		.attr("y", function(d,i) {return height/2-64+(20*i)})
-  		.attr("fill", "white")
+  		.attr("fill", theme.foreground)
   		.text(function(d) {return d});
   	
   // FUNCTIONALITY
@@ -1470,7 +1557,7 @@ if (options.which_camp === "ont_nav"){
   */
 } else if (options.which_camp == "ont_map"){
   
-  svg.selectAll("*").remove();
+
   
   format = function(d){
     const f = d3.format(",.0f");
@@ -1496,7 +1583,7 @@ if (options.which_camp === "ont_nav"){
     const sankey = d3.sankey()
         .nodeWidth(15)
         .nodePadding(10)
-        .extent([[1, 1], [width - 1, height - 5]]);
+        .extent([[1, 1], [width, height]]);
         
     return sankey({nodes: data.nodes, links: data.links});
     
@@ -1513,7 +1600,7 @@ if (options.which_camp === "ont_nav"){
     .selectAll("g")
     .data(links)
     .enter().append("g")
-      .style("mix-blend-mode", "multiply")
+      //.style("mix-blend-mode", "multiply")
       .on("mouseover", function(d){
         d3.select(this).attr("stroke-opacity", 0.7);
       })
@@ -1566,7 +1653,7 @@ if (options.which_camp === "ont_nav"){
       .text(function(d) {return d.name});
   
   svg.append("g")
-      .style("font", "12px sans-serif")
+      .style("font", options.font_size +"px sans-serif")
     .selectAll("text")
     .data(nodes)
     .enter().append("text")
@@ -1578,7 +1665,7 @@ if (options.which_camp === "ont_nav"){
         }
       })
       .attr("text-anchor", "middle")//function(d) {d.x0 < width / 2 ? "start" : "end"})
-      .attr("fill", "#FFF")
+      .attr("fill", theme.foreground)
       .attr("transform", function(d){
         xval = d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6;
         yval = (d.y1 + d.y0) / 2;
