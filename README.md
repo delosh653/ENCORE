@@ -62,12 +62,17 @@ install.packages("data.table")
 install.packages("jsonlite")
 install.packages("stringr")
 install.packages("igraph")
+```
 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+Copy each of the following lines in the console separately and press enter for each:
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+BiocManager::install("STRINGdb", version = "3.8")
 BiocManager::install("STRINGdb", version = "3.8")
 BiocManager::install("AnnotationHub", version = "3.8")
 BiocManager::install("mygene", version = "3.8")
+BiocManager::install("topGO", version = "3.8")
 BiocManager::install("AnnotationDbi", version = "3.8")
 BiocManager::install("org.Ag.eg.db", version = "3.8")
 BiocManager::install("org.Dm.eg.db", version = "3.8")
