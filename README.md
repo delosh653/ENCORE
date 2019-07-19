@@ -69,7 +69,6 @@ Copy each of the following lines in the console separately and press enter for e
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 BiocManager::install("STRINGdb")
-BiocManager::install("STRINGdb")
 BiocManager::install("AnnotationHub")
 BiocManager::install("mygene")
 BiocManager::install("topGO")
