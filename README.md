@@ -68,18 +68,18 @@ Copy each of the following lines in the console separately and press enter for e
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
-BiocManager::install("STRINGdb", version = "3.8")
-BiocManager::install("STRINGdb", version = "3.8")
-BiocManager::install("AnnotationHub", version = "3.8")
-BiocManager::install("mygene", version = "3.8")
-BiocManager::install("topGO", version = "3.8")
-BiocManager::install("AnnotationDbi", version = "3.8")
-BiocManager::install("org.Ag.eg.db", version = "3.8")
-BiocManager::install("org.Dm.eg.db", version = "3.8")
-BiocManager::install("org.Hs.eg.db", version = "3.8")
-BiocManager::install("org.Mm.eg.db", version = "3.8")
-BiocManager::install("org.EcK12.eg.db", version = "3.8")
-BiocManager::install("org.Sc.sgd.db", version = "3.8")
+BiocManager::install("STRINGdb")
+BiocManager::install("STRINGdb")
+BiocManager::install("AnnotationHub")
+BiocManager::install("mygene")
+BiocManager::install("topGO")
+BiocManager::install("AnnotationDbi")
+BiocManager::install("org.Ag.eg.db")
+BiocManager::install("org.Dm.eg.db")
+BiocManager::install("org.Hs.eg.db")
+BiocManager::install("org.Mm.eg.db")
+BiocManager::install("org.EcK12.eg.db")
+BiocManager::install("org.Sc.sgd.db")
 ```
 
 This will install these packages (a set of functions that this application uses) onto your computer. This may ask for your input, so just say no to the questions asked. If you run into errors saying “no,” just say yes instead. Note: this may take some time.
