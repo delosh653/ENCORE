@@ -45,7 +45,7 @@ options(shiny.maxRequestSize=150*1024^2)
 
 options(shiny.port = 9886)
 
-vers_encore <- 2.0
+vers_encore <- 2.1
 
 # functions and variables for generating ontology file ----
 
@@ -2346,7 +2346,7 @@ server <-  function(input, output, session) {
         length(serverValues$fc_groups) > 0 &&
         (serverValues$restart > 0 | (!is.null(input$update_map)  && input$update_map > 0))){
       
-      r2d3(data=serverValues$heat.df, script = "js_scripts\\all_tabs.js", d3_version = 5,
+      r2d3(data=serverValues$heat.df, script = "js_scripts/all_tabs.js", d3_version = 5,
              options(r2d3.theme = list(
                background = serverValues$col_bg,
                foreground = serverValues$textcol_bg)),
@@ -2391,7 +2391,7 @@ server <-  function(input, output, session) {
         sum(serverValues$tot_fc_cats) > 1){
       # print(sum(serverValues$chord_dat))
       
-      r2d3(data=serverValues$heat.df, script = "js_scripts\\all_tabs.js", d3_version = 5,
+      r2d3(data=serverValues$heat.df, script = "js_scripts/all_tabs.js", d3_version = 5,
            options(r2d3.theme = list(
              background = serverValues$col_bg,
              foreground = serverValues$textcol_bg)),
@@ -2433,10 +2433,10 @@ server <-  function(input, output, session) {
   
   output$ont_map <- renderD3({ 
     if (!is.null(input$update_map) && input$update_map > 0){
-      r2d3(data = data_to_json(serverValues$dat_sankey), script = "js_scripts\\all_tabs.js", 
+      r2d3(data = data_to_json(serverValues$dat_sankey), script = "js_scripts/all_tabs.js", 
            d3_version = 5, 
-           dependencies = c("js_scripts\\sankey\\d3-sankey.js",
-                            "js_scripts\\sankey\\d3-sankey.min.js"),
+           dependencies = c("js_scripts/sankey/d3-sankey.js",
+                            "js_scripts/sankey/d3-sankey.min.js"),
            options = list("all_sig"=serverValues$all_sig,
                           "sig_color"=unname(serverValues$sig_color),
                           "no_sig_color"=serverValues$no_sig_color,
