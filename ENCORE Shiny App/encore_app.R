@@ -667,7 +667,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                     choices = c("")),
         div(style="display:inline-block;",
             checkboxGroupInput(inputId = "fc_groups",
-                               label = "Which AC categories would you like to see?",
+                               label = "Which AC categories would you like to see in the Ontology Explorer/Group Comparison?",
                                choices = c("Repressed", "Damped", "Harmonic", "Forced", 
                                            "Overexpressed", 
                                            "All Circadian (without Overexpressed/Repressed)" = "All.Circ.wo.OE.RE",
@@ -694,15 +694,25 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
         checkboxInput(inputId = "togg_dark",
                       label = "Turn on dark mode visualizations?*",
                       value = F),
+        checkboxInput(inputId = "togg_fit",
+                      label = "Show ECHO fitted values in heatmaps?*",
+                      value = F),
         checkboxInput(inputId = "togg_sig_groups",
                       label = "Only show genes in groups significantly enriched for the GO Term in chord diagrams?",
                       value = T),
+        div(class="header", checked=NA,
+            tags$b("Visualization window size (in pixels):")),
+        
+        div(style="display: inline-block; width: 70px;",
+            textInput("viz_wid", "width:")),
+        
+        div(style="display: inline-block; width: 70px;",
+            textInput("viz_height", "height:")),
         
         tags$div(id = "inline", numericInput(inputId = "font_size",
                                              label = "Font Size?* :",
                                              value = 16,
-                                             min = 1,
-                                             max = 100,
+                                             min = 0,
                                              step = 1,
                                              width = "100px"))
         
@@ -711,13 +721,13 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
       mainPanel(
         tabsetPanel(
           tabPanel("Ontology Map", {
-            d3Output("ont_map",width = "100%", height = "840px")
+            uiOutput("ont_map_ui")
           }),
           tabPanel("Ontology Explorer", {
-            d3Output("ont_nav",width = "100%", height = "840px")
+            uiOutput("ont_nav_ui")
           }),
           tabPanel("Group Comparison", {
-            d3Output("group_comp",width = "100%", height = "840px")
+            uiOutput("group_comp_ui")
           }),
           tabPanel("Gene/Term Explorer", fluidPage(
             fluidRow(htmlOutput("frame")),
@@ -966,7 +976,7 @@ server <-  function(input, output, session) {
   
   output$Help_fc=renderUI({ # time inputs help
     if(input$fc_help%%2){
-      helpText("Currently All Circadian is a proxy for all categories, and All Circadian (without Overexpressed/ Repressed) is a proxy for Damped, Forced, and Harmonic. If a category has no significant terms for that ontology category, it will be automatically unselected and will not appear in visualizations.")
+      helpText("Currently All Circadian is all categories, and All Circadian (without Overexpressed/ Repressed) is Damped, Forced, and Harmonic. If either of the aforementioned categories is chosen, due to overlap with other AC categories, other AC categories (such as Damped) will be unselected for visualizations. If a category has no significant terms for that ontology category, it will be automatically unselected and will not appear in visualizations. ")
     }
     else{
       return()
@@ -1452,40 +1462,44 @@ server <-  function(input, output, session) {
             int_sub_tr$`Phase Shift`[int_sub_tr$`Phase Shift` <0] <- int_sub_tr$`Phase Shift`[int_sub_tr$`Phase Shift` < 0]+2*pi
             
             # HEAT MAP STUFF
-            
-            #get matrix of just the relative expression over time
-            hm_mat <- as.matrix(int_sub_tr[,(end_num+1):(end_num+length(timen)*num_reps)])
-            
-            #if there are replicates, average the relative expression for each replicate
-            mtx_reps <- list() # to store actual matrix
-            mtx_count <- list() # to store how many are NA
-            for (i in 1:num_reps){
-              mtx_reps[[i]] <- hm_mat[, seq(i,ncol(hm_mat), by=num_reps)]
-              mtx_count[[i]] <- is.na(mtx_reps[[i]])
-              mtx_reps[[i]][is.na(mtx_reps[[i]])] <- 0
+            if (!input$togg_fit){
+              #get matrix of just the relative expression over time
+              hm_mat <- as.matrix(int_sub_tr[,(end_num+1):(end_num+length(timen)*num_reps)])
+              
+              #if there are replicates, average the relative expression for each replicate
+              mtx_reps <- list() # to store actual matrix
+              mtx_count <- list() # to store how many are NA
+              for (i in 1:num_reps){
+                mtx_reps[[i]] <- hm_mat[, seq(i,ncol(hm_mat), by=num_reps)]
+                mtx_count[[i]] <- is.na(mtx_reps[[i]])
+                mtx_reps[[i]][is.na(mtx_reps[[i]])] <- 0
+              }
+              repmtx <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat))+num_reps # to store how many we should divide by
+              hm_mat <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat)) # to store the final result
+              for (i in 1:num_reps){
+                hm_mat <- hm_mat + mtx_reps[[i]] # sum the replicates
+                repmtx <- repmtx - mtx_count[[i]] # how many replicates are available for each time point
+              }
+              repmtx[repmtx==0] <- NA # to avoid division by 0 and induce NAs if there are no time points available
+              hm_mat <- hm_mat/repmtx
+              
+              # center rows around mean
+              # vector of row means
+              all_row_mean <- rowMeans(hm_mat, na.rm = TRUE)
+              hm_mat <- hm_mat - all_row_mean
+              
+              
+            } else {
+              # get fitted values for heatmap instead
+              hm_mat <- as.matrix(int_sub_tr[,(end_num+length(timen)*num_reps+1):ncol(int_sub_tr)])
+              
             }
-            repmtx <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat))+num_reps # to store how many we should divide by
-            hm_mat <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat)) # to store the final result
-            for (i in 1:num_reps){
-              hm_mat <- hm_mat + mtx_reps[[i]] # sum the replicates
-              repmtx <- repmtx - mtx_count[[i]] # how many replicates are available for each time point
-            }
-            repmtx[repmtx==0] <- NA # to avoid division by 0 and induce NAs if there are no time points available
-            hm_mat <- hm_mat/repmtx
-            
-            # center rows around mean
-            # vector of row means
-            all_row_mean <- rowMeans(hm_mat, na.rm = TRUE)
-            hm_mat <- hm_mat - all_row_mean
-            
             
             #normalize each row to be between -1 and 1
             for (i in 1:nrow(int_sub_tr)){
               gene_max <- max(abs((hm_mat[i,])),na.rm = TRUE)
               hm_mat[i,] <- hm_mat[i,]/gene_max 
             }
-            
-            
             #sort by phase shift, if more than 1 gene
             if (nrow(hm_mat) > 1){
               ord <- order(int_sub_tr$`Phase Shift`)
@@ -1791,40 +1805,45 @@ server <-  function(input, output, session) {
             int_sub_tr$`Phase Shift`[int_sub_tr$`Phase Shift` <0] <- int_sub_tr$`Phase Shift`[int_sub_tr$`Phase Shift` < 0]+2*pi
             
             # HEAT MAP STUFF
-            
-            #get matrix of just the relative expression over time
-            hm_mat <- as.matrix(int_sub_tr[,(end_num+1):(end_num+length(timen)*num_reps)])
-            
-            #if there are replicates, average the relative expression for each replicate
-            mtx_reps <- list() # to store actual matrix
-            mtx_count <- list() # to store how many are NA
-            for (i in 1:num_reps){
-              mtx_reps[[i]] <- hm_mat[, seq(i,ncol(hm_mat), by=num_reps)]
-              mtx_count[[i]] <- is.na(mtx_reps[[i]])
-              mtx_reps[[i]][is.na(mtx_reps[[i]])] <- 0
+            if (!input$togg_fit){
+              #get matrix of just the relative expression over time
+              hm_mat <- as.matrix(int_sub_tr[,(end_num+1):(end_num+length(timen)*num_reps)])
+              
+              #if there are replicates, average the relative expression for each replicate
+              mtx_reps <- list() # to store actual matrix
+              mtx_count <- list() # to store how many are NA
+              for (i in 1:num_reps){
+                mtx_reps[[i]] <- hm_mat[, seq(i,ncol(hm_mat), by=num_reps)]
+                mtx_count[[i]] <- is.na(mtx_reps[[i]])
+                mtx_reps[[i]][is.na(mtx_reps[[i]])] <- 0
+              }
+              repmtx <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat))+num_reps # to store how many we should divide by
+              hm_mat <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat)) # to store the final result
+              for (i in 1:num_reps){
+                hm_mat <- hm_mat + mtx_reps[[i]] # sum the replicates
+                repmtx <- repmtx - mtx_count[[i]] # how many replicates are available for each time point
+              }
+              repmtx[repmtx==0] <- NA # to avoid division by 0 and induce NAs if there are no time points available
+              hm_mat <- hm_mat/repmtx
+              
+              # center rows around mean
+              # vector of row means
+              all_row_mean <- rowMeans(hm_mat, na.rm = TRUE)
+              hm_mat <- hm_mat - all_row_mean
+              
+              
+              
+            } else {
+              # get fitted values for heatmap instead
+              hm_mat <- as.matrix(int_sub_tr[,(end_num+length(timen)*num_reps+1):ncol(int_sub_tr)])
+              
             }
-            repmtx <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat))+num_reps # to store how many we should divide by
-            hm_mat <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat)) # to store the final result
-            for (i in 1:num_reps){
-              hm_mat <- hm_mat + mtx_reps[[i]] # sum the replicates
-              repmtx <- repmtx - mtx_count[[i]] # how many replicates are available for each time point
-            }
-            repmtx[repmtx==0] <- NA # to avoid division by 0 and induce NAs if there are no time points available
-            hm_mat <- hm_mat/repmtx
-            
-            
-            # center rows around mean
-            # vector of row means
-            all_row_mean <- rowMeans(hm_mat, na.rm = TRUE)
-            hm_mat <- hm_mat - all_row_mean
-            
             
             #normalize each row to be between -1 and 1
             for (i in 1:nrow(int_sub_tr)){
               gene_max <- max(abs((hm_mat[i,])),na.rm = TRUE)
               hm_mat[i,] <- hm_mat[i,]/gene_max 
             }
-            
             
             #sort by phase shift, if more than 1 gene
             if (nrow(hm_mat) > 1){
@@ -2142,40 +2161,45 @@ server <-  function(input, output, session) {
             int_sub_tr$`Phase Shift`[int_sub_tr$`Phase Shift` <0] <- int_sub_tr$`Phase Shift`[int_sub_tr$`Phase Shift` < 0]+2*pi
             
             # HEAT MAP STUFF
-            
-            #get matrix of just the relative expression over time
-            hm_mat <- as.matrix(int_sub_tr[,(end_num+1):(end_num+length(timen)*num_reps)])
-            
-            #if there are replicates, average the relative expression for each replicate
-            mtx_reps <- list() # to store actual matrix
-            mtx_count <- list() # to store how many are NA
-            for (i in 1:num_reps){
-              mtx_reps[[i]] <- hm_mat[, seq(i,ncol(hm_mat), by=num_reps)]
-              mtx_count[[i]] <- is.na(mtx_reps[[i]])
-              mtx_reps[[i]][is.na(mtx_reps[[i]])] <- 0
+            if (!input$togg_fit){
+              #get matrix of just the relative expression over time
+              hm_mat <- as.matrix(int_sub_tr[,(end_num+1):(end_num+length(timen)*num_reps)])
+              
+              #if there are replicates, average the relative expression for each replicate
+              mtx_reps <- list() # to store actual matrix
+              mtx_count <- list() # to store how many are NA
+              for (i in 1:num_reps){
+                mtx_reps[[i]] <- hm_mat[, seq(i,ncol(hm_mat), by=num_reps)]
+                mtx_count[[i]] <- is.na(mtx_reps[[i]])
+                mtx_reps[[i]][is.na(mtx_reps[[i]])] <- 0
+              }
+              repmtx <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat))+num_reps # to store how many we should divide by
+              hm_mat <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat)) # to store the final result
+              for (i in 1:num_reps){
+                hm_mat <- hm_mat + mtx_reps[[i]] # sum the replicates
+                repmtx <- repmtx - mtx_count[[i]] # how many replicates are available for each time point
+              }
+              repmtx[repmtx==0] <- NA # to avoid division by 0 and induce NAs if there are no time points available
+              hm_mat <- hm_mat/repmtx
+              
+              # center rows around mean
+              # vector of row means
+              all_row_mean <- rowMeans(hm_mat, na.rm = TRUE)
+              hm_mat <- hm_mat - all_row_mean
+              
+              
+              
+            } else {
+              # get fitted values for heatmap instead
+              hm_mat <- as.matrix(int_sub_tr[,(end_num+length(timen)*num_reps+1):ncol(int_sub_tr)])
+              
             }
-            repmtx <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat))+num_reps # to store how many we should divide by
-            hm_mat <- matrix(0L,ncol = length(timen),nrow = nrow(hm_mat)) # to store the final result
-            for (i in 1:num_reps){
-              hm_mat <- hm_mat + mtx_reps[[i]] # sum the replicates
-              repmtx <- repmtx - mtx_count[[i]] # how many replicates are available for each time point
-            }
-            repmtx[repmtx==0] <- NA # to avoid division by 0 and induce NAs if there are no time points available
-            hm_mat <- hm_mat/repmtx
-            
-            
-            # center rows around mean
-            # vector of row means
-            all_row_mean <- rowMeans(hm_mat, na.rm = TRUE)
-            hm_mat <- hm_mat - all_row_mean
-            
             
             #normalize each row to be between -1 and 1
             for (i in 1:nrow(int_sub_tr)){
               gene_max <- max(abs((hm_mat[i,])),na.rm = TRUE)
               hm_mat[i,] <- hm_mat[i,]/gene_max 
             }
-            
             
             #sort by phase shift, if more than 1 gene
             if (nrow(hm_mat) > 1){
@@ -2338,6 +2362,51 @@ server <-  function(input, output, session) {
   })
   
   # render output ontology explorer ----
+  
+  output$ont_map_ui <- renderUI({
+    if (input$viz_wid == "" | grepl("\\D", input$viz_wid)){
+      wid <- "100%"
+    } else {
+      wid <- paste0(input$viz_wid,"px")
+    }
+    
+    if (input$viz_height == "" | grepl("\\D", input$viz_height)){
+      height <- "840px"
+    } else {
+      height <- paste0(input$viz_height,"px")
+    }
+    d3Output("ont_map",width = wid, height = height)
+  })
+  
+  output$ont_nav_ui <- renderUI({
+    if (input$viz_wid == "" | grepl("\\D", input$viz_wid)){
+      wid <- "100%"
+    } else {
+      wid <- paste0(input$viz_wid,"px")
+    }
+    
+    if (input$viz_height == "" | grepl("\\D", input$viz_height)){
+      height <- "840px"
+    } else {
+      height <- paste0(input$viz_height,"px")
+    }
+    d3Output("ont_nav",width = wid, height = height)
+  })
+  
+  output$group_comp_ui <- renderUI({
+    if (input$viz_wid == "" | grepl("\\D", input$viz_wid)){
+      wid <- "100%"
+    } else {
+      wid <- paste0(input$viz_wid,"px")
+    }
+    
+    if (input$viz_height == "" | grepl("\\D", input$viz_height)){
+      height <- "840px"
+    } else {
+      height <- paste0(input$viz_height,"px")
+    }
+    d3Output("group_comp",width = wid, height = height)
+  })
   
   # now send it off to d3!
   
