@@ -159,6 +159,6 @@ Rensselaer Polytechnic Institute
 
 ## FAQ
 
-**Q:** My dataset isn't working for some reason and I'm not using the latest ECHO version! Why?
+**Q:** My dataset isn't working for some reason and I'm not using the latest ENCORE version! Why?
 
-**A:** Please update to the current ECHO version (you can see this at the top of the github repository by checking out what the latest commit was), since this may have been corrected in an update. If this problem persists, feel free to send another email!
+**A:** Please update to the current ENCORE version (you can see this at the top of the github repository by checking out what the latest commit was), since this may have been corrected in an update. If this problem persists, feel free to send another email!
