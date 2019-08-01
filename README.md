@@ -24,7 +24,7 @@ All images created by ENCORE using data from [*Harmonics of Circadian Gene Trans
 
 ## Use and First-Time Set-Up Instructions
 
-Thank you for downloading ENCORE (ECHO Native Circadian Ontological Rhythmic Explorer)! ENCORE is an app designed to help you navigate and understand the function of amplitude change categories for circadian rhythms with gene ontologies. This guide will lead you in first time set-up and use. Pictures have been provided for ease of use, using Windows 10, in the files ENCORE_README.docx and ENCORE_README.pdf, found above. A double asterisk indicates the step has an explanation below, and a tilde indicates the step is first-time set up only.
+Thank you for downloading ENCORE (ECHO Native Circadian Ontological Rhythmic Explorer)! ENCORE is an app designed to help you navigate and understand the function of amplitude change categories for circadian rhythms with gene ontologies. This guide will lead you in first time set-up and use. Pictures have been provided for ease of use, using Windows 10, in the files ENCORE_README.docx, found above. A double asterisk indicates the step has an explanation below, and a tilde indicates the step is first-time set up only.
 
 Steps: 
 1.	** ~ Download [Firefox](https://www.mozilla.org/en-US/firefox/new/) or [Chrome](https://www.google.com/chrome/browser/desktop/index.html) and make it your default browser.
@@ -43,7 +43,7 @@ Steps:
 
 Enter your organism’s name in the ‘choose an organism’ box and click update. You should then see the taxonomy number preceding the file names. Download the file called TAX#.protein.links.v11.0.txt.gz.
 
-3.	~ Once you’ve downloaded that file, extract the text file. (You may need to download an alternative unzip program that can unzip .gz files, such as [7Zip](https://www.7-zip.org/).) Place that text file, unaltered, in the ‘links’ folder of the ‘ENCORE Shiny App’ Folder.
+3.	~ Once you’ve downloaded that file, extract the text file. (If using Windows, you may need to download an alternative unzip program that can unzip .gz files, such as [7Zip](https://www.7-zip.org/).) Place that text file, unaltered, in the ‘links’ folder of the ‘ENCORE Shiny App’ Folder.
 
 4.	~ [Download R](https://www.r-project.org/), if you do not already have it. 
 
@@ -51,7 +51,7 @@ Enter your organism’s name in the ‘choose an organism’ box and click updat
 
 6.	Plug in your computer, if it is not plugged in already, and open RStudio.
 
-7.	~ Copy and paste the following text into the console window (bottom right window of the RStudio Session), then press enter:
+7.	~ Copy and paste the following text into the console window (bottom left window of the RStudio Session), then press enter:
 
 ```r
 install.packages("rstudioapi")
