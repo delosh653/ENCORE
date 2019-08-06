@@ -79,6 +79,10 @@ if (options.togg_border){
        			.style("stroke-width", 2);
 }
 
+if (options.togg_label){
+  options.font_size = 0;
+}
+
 if (options.which_camp === "ont_nav"){
   
   
@@ -185,7 +189,7 @@ if (options.which_camp === "ont_nav"){
   
   svg.append("g")
     .call(yAxis)
-    .attr("font-size",16)
+    .attr("font-size",options.font_size +"px")
     .attr("class", "y axis")
     .attr("transform", "translate("+(pad_wid/2-10)+", 0)")
     //.attr("stroke",theme.foreground)
@@ -316,7 +320,19 @@ if (options.which_camp === "ont_nav"){
           .duration(0)      
           .style("opacity", 0);   
       
-  	});
+  	})
+    .on("click",(function(d,i){
+        var f = Number(d3.select(this).attr("id"));
+        
+    	  Shiny.setInputValue(
+    		"fc_nav", // input name
+    		options.fc_cats_go[f].substring(4,options.fc_cats_go[f].length) + " " + d.data.GO_ID, //d.data.GO_ID, // input value
+    		{priority: "event"}
+    	  );
+    	  
+    	  })
+    	);
+  	
   function add(a, b) {
     return a + b;
   }
@@ -338,7 +354,6 @@ if (options.which_camp === "ont_nav"){
   				return "";
   			}
   	  }
-  		
   	})
   	.attr("text-anchor", "middle")
   	.attr('x', function(d,i) { 
@@ -511,7 +526,7 @@ if (options.which_camp === "ont_nav"){
     })
     .on("click",(function(d){
     	  Shiny.setInputValue(
-    		"go_url", // input name
+    		"go_url_nav", // input name
     		d.data.GO_ID, // input value
     		{priority: "event"}
     	  )})
@@ -609,7 +624,7 @@ if (options.which_camp === "ont_nav"){
   			.attr("text-anchor","middle")
   			.attr("font-family", "sans-serif")
   			.attr("font-size", "50px")
-  			.attr("x", 50)
+  			.attr("x", 25)
   			.attr("y", height/2 - 10)
   			.attr("fill", theme.foreground)
   			.text("*")
@@ -636,11 +651,11 @@ if (options.which_camp === "ont_nav"){
   		.enter().append("text")
   			.attr("text-anchor","middle")
   			.attr("font-family", "sans-serif")
-  			.attr("font-size", "30px")
-  			.attr("x", 50)
+  			.attr("font-size", "16px")
+  			.attr("x", 25)
   			.attr("y", height/2+10)
   			.attr("fill", theme.foreground)
-  			.text("<=")
+  			.text("back")
   			.on("click", function(d){
     		  Shiny.setInputValue(
     			"pie_forward", 
@@ -659,7 +674,7 @@ if (options.which_camp === "ont_nav"){
   			.attr("font-family", "sans-serif")
   			.attr("font-size", options.font_size +"px")
   			.attr("transform", function(d){
-  			  return "translate("+100+","+height/2+") rotate(270)"
+  			  return "translate("+75+","+height/2+") rotate(270)"
   			})
   			.attr("fill", theme.foreground)
   			.text("Fraction Annotated");
@@ -1683,7 +1698,7 @@ if (options.which_camp === "ont_nav"){
         }
         
     	  Shiny.setInputValue(
-    		"go_url", // input name
+    		"go_url_map", // input name
     		go_id, // input value
     		{priority: "event"}
     	  )})
