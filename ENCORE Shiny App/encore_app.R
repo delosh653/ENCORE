@@ -2,14 +2,22 @@
 # By Hannah De los Santos
 # Originated on: 1/14/19
 
-# preload ----
+# set directory and clear workspace ----
 
 #https://stackoverflow.com/questions/3452086/getting-path-of-an-r-script/35842176#35842176
 # set working directory - only works in RStudio (with rstudioapi)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
+
 # clear workspace (sorry!)
 rm(list=ls())
+
+# data versions ----
+
+vers_encore <- "3.0"
+vers_string <- "11.0"
+
+# preload ----
 
 # neurospora library
 library(AnnotationHub)
@@ -44,8 +52,6 @@ library(org.Sc.sgd.db)
 options(shiny.maxRequestSize=150*1024^2)
 
 options(shiny.port = 9886)
-
-vers_encore <- 2.1
 
 # functions and variables for generating ontology file ----
 
@@ -544,15 +550,6 @@ get_child_table <- function(par, serverValues, sig_in){
     fc_abbrev <- rep(as.character(fc_map[serverValues$fc_groups]),
                      each=nrow(go.df)) #OE, RP
     
-    # remove column if they have nothing
-    # rem_col <- c()
-    # for (f in serverValues$fc_groups){
-    #   if (sum(go.df[paste0("Tot_",f)]) == 0){
-    #     rem_col <- c(rem_col, f)
-    #   }
-    # }
-    # temp_group <- c(serverValues$fc_groups[!serverValues$fc_groups %in% rem_col],rem_col)
-    # 
     serverValues[["go.df"]] <- go.df
     serverValues[["fc_abbrev"]] <- fc_abbrev
     serverValues$sig <- sig_in
@@ -560,17 +557,7 @@ get_child_table <- function(par, serverValues, sig_in){
   } else {
     serverValues[["go.df"]] <- go.df
   }
-  # else {
-  #   if (!is.null(sig_in) && serverValues$sig == sig_in){
-  #     if (sig_in == "Significant"){
-  #       serverValues$sig <- "Not Significant"
-  #       prev_sig[length(prev_sig)] <<- "Not Significant"
-  #     } else {
-  #       serverValues$sig <- "Significant"
-  #       prev_sig[length(prev_sig)] <<- "Significant"
-  #     }
-  #   }
-  # }
+  
   # if there are no children, the pie chart won't change
   return(serverValues)
 }
@@ -614,7 +601,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                 #inline .form-group { display: table-row;}")
         ),
         
-        tags$p(HTML("Note: Instructions can be found in the 'Instructions' tab. * indicates inputs that will automatically change visualizations upon change. <b>It is also strongly recommended that your computer is plugged in to run this application.</b>")),
+        tags$p(HTML("<b>Note: Instructions can be found in the 'Instructions' tab.</b> * indicates inputs that will automatically change visualizations upon change. <b>It is also strongly recommended that your computer is plugged in to run this application.</b>")),
         
         tags$p(paste("ENCORE Version:", vers_encore)),
         
@@ -657,15 +644,21 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                                 "Cellular Component" = "CC",
                                 "Molecular Function"= "MF")),
         selectInput(inputId = "fc_map",
-                    label = "Which group's ontology map would you like to explore?",
+                    label = "Which group's Ontology Map would you like to explore?",
                     choices = c("Damped", "Harmonic", "Forced", 
                                 "Overexpressed", "Repressed",  
                                 "All Circadian (without Overexpressed/Repressed)" = "All.Circ.wo.OE.RE",
                                 "All Circadian" = "All.Circ")),
-        selectInput(inputId = "ont_in_map",
-                    label = "Which ontology term would you like to see the path to?",
-                    choices = c("")),
-        div(style="display:inline-block;",
+        div(style="display:inline-block; width:400px;",
+            selectInput(inputId = "ont_in_map",
+                        label = "Which ontology term would you like to see the path to in the Ontology Map?",
+                        choices = c(""))
+        ),
+        div(style="display: inline-block; vertical-align: top; width: 5px;",
+            actionButton("ont_term_help", icon("question", lib="font-awesome"))),
+        uiOutput("Help_ont_term"),
+        
+        div(style="display:inline-block; width:400px;",
             checkboxGroupInput(inputId = "fc_groups",
                                label = "Which AC categories would you like to see in the Ontology Explorer/Group Comparison?",
                                choices = c("Repressed", "Damped", "Harmonic", "Forced", 
@@ -683,7 +676,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                      "Restart Explorer!*"),
         tags$p(),
         numericInput("num_chord", "Max number of protein-protein interactions:*",
-                     min = 0, max = 500, step = 1, value = 100
+                     min = 0, max = 500, step = 1, value = 50
         ),
         checkboxInput(inputId = "togg_path",
                       label = "Show path at top right?*",
@@ -691,6 +684,9 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
         checkboxInput(inputId = "togg_border",
                       label = "Turn on visualization border?*",
                       value = T),
+        checkboxInput(inputId = "togg_label",
+                      label = "Turn off visualization labels?*",
+                      value = F),
         checkboxInput(inputId = "togg_dark",
                       label = "Turn on dark mode visualizations?*",
                       value = F),
@@ -701,7 +697,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                       label = "Only show genes in groups significantly enriched for the GO Term in chord diagrams?",
                       value = T),
         div(class="header", checked=NA,
-            tags$b("Visualization window size (in pixels):")),
+            tags$b("Visualization window size (in pixels)*:")),
         
         div(style="display: inline-block; width: 70px;",
             textInput("viz_wid", "width:")),
@@ -720,15 +716,27 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
       , width = 4),
       mainPanel(
         tabsetPanel(
-          tabPanel("Ontology Map", {
-            uiOutput("ont_map_ui")
-          }),
-          tabPanel("Ontology Explorer", {
-            uiOutput("ont_nav_ui")
-          }),
-          tabPanel("Group Comparison", {
-            uiOutput("group_comp_ui")
-          }),
+          tabPanel("Ontology Map", 
+            uiOutput("ont_map_ui"),
+            tags$br(),
+            fluidRow(style = "border: 1px #e3e3e3; border-style: solid; border-radius: 10px; background: #f5f5f5; padding: 10px;",
+                     uiOutput("ont_map_below")
+            )
+          ),
+          tabPanel("Ontology Explorer", 
+            uiOutput("ont_nav_ui"),
+            tags$br(),
+            fluidRow(style = "border: 1px #e3e3e3; border-style: solid; border-radius: 10px; background: #f5f5f5; padding: 10px;",
+                     uiOutput("ont_nav_below")
+            )
+          ),
+          tabPanel("Group Comparison", 
+            uiOutput("group_comp_ui"),
+            tags$br(),
+            fluidRow(style = "border: 1px #e3e3e3; border-style: solid; border-radius: 10px; background: #f5f5f5; padding: 10px;",
+                     uiOutput("group_comp_below")
+            )
+          ),
           tabPanel("Gene/Term Explorer", fluidPage(
             fluidRow(htmlOutput("frame")),
             fluidRow( column(6,plotOutput("expr", height = "500px"),
@@ -763,20 +771,20 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                               tags$p("Further, we can find more information through different interactions:"),
                               
                               HTML('<center><img src="hover_ont_map_node.png" style="width:200px">   <img src="hover_ont_map_link.png" style="width:200px"></center><br>'),
-                              tags$p("Hover on a bar corresponding to an ontological term to see its title. Hover on a link to see the source ontological term to the target ontological term. Click on the GO Term for more informaton about that term, a link for which appears in Gene/Term Explorer Tab."),
+                              tags$p("Hover on a bar corresponding to an ontological term to see its title. Hover on a link to see the source ontological term to the target ontological term. Click on the GO Term for more informaton about that term and the selected AC Category's enrichment below the visualization, and a link for more information about the GO Term appears in Gene/Term Explorer Tab."),
                               
                               HTML('<center><img src="ont_nav.PNG" style="width:400px"></center><br>'),
                               HTML('<center>'),tags$b("Ontology Navigator"),HTML('</center>'),
-                              tags$p("This is a layered bar graph representing the fraction of amplitude change coefficient categories that contribute to each ontological catgory, with the width representing the total fraction annotated. To explore the children of a certain category, click on the corresponding colored bar below each bar. For example, clicking on the 'macromolecule localization' bar shows its children, 'RNA localization', 'cellular macromolecule lacalization', and 'protein localization'."),
+                              tags$p("This is a layered bar graph representing the fraction of amplitude change coefficient categories that contribute to each ontological catgory, with the width representing the total fraction annotated. To explore the children of a certain category, click on the corresponding colored bar below each bar. For example, clicking on the 'macromolecule localization' bar shows its children, 'RNA localization', 'cellular macromolecule localization', and 'protein localization'."),
                               tags$p("The path taken and dataset appears in the top right corner, with the current parent category selected in bold. To go back, click on the arrow on the left. To switch between looking at significant and nonsignificant categories, click on the star on the left. If nothing changes, this means that categories of the opposite significance do not exist."),
                               tags$p("Further, we can find more information through different interactions:"),
                               
                               HTML('<center><img src="hover_fc_bar.png" style="width:200px">   <img src="hover_ont_bar.png" style="width:200px"></center><br>'),
-                              tags$p("Hover on each bar layer for fraction annotated by each category, p-value of enrichment, and fold enrichment information. Hover on ontology bar for total fraction annotated. Click on the GO Term for more informaton about that term, a link for which appears in Gene/Term Explorer Tab."),
+                              tags$p("Hover on each bar layer for fraction annotated by each category, p-value of enrichment, and fold enrichment information. Hover on ontology bar for total fraction annotated. Click on the GO Term for more informaton about that term below the GO term, and a link for more information appears in Gene/Term Explorer Tab. Click on an AC group's bar text to get enrichment information for that term for the selected AC category below the visualization."),
                               
                               HTML('<center><img src="group_comp.PNG" style="width:400px"></center><br>'),
                               HTML('<center>'),tags$b("Group Comparison:"),HTML('</center>'),
-                              tags$p("Once you've selected a GO Term in the Ontology Explorer, you can explore protein-protein ineractions between different genes belonging to that category, as well as their mean-centered, normalized heat maps of gene expression sorted by phase. In the chord diagram, each chord indicates a protein-protein interaction between two genes. Darker chord colors indicate connections within category. Chords are sorted by highest strength to lowest strength connections, and more connections, if any, can be found by increasing the maximum number of protein-protein interactions on the sidebar. Note: if only one gene corresponds to the group, a chord diagram will not be drawn. Also, some ids may not have any STRING mapping and will be removed."),
+                              tags$p("Once you've selected a GO Term in the Ontology Explorer, you can explore protein-protein ineractions between different genes belonging to that category, as well as their mean-centered, normalized heat maps of gene expression sorted by phase. In the chord diagram, each chord indicates a protein-protein interaction between two genes. Darker chord colors indicate connections within category. Chords are sorted by highest strength to lowest strength connections, and more connections, if any, can be found by increasing the maximum number of protein-protein interactions on the sidebar. Note: if only one gene corresponds to the group, a chord diagram will not be drawn. Also, some ids may not have any STRING mapping and will be removed. Information about genes without identifiers, genes removed for not having a high enough score or connections, and the minimum combined STRING score for the represented chords appears below the visualization."),
                               tags$p("We can also find more information about these connections through different interactions:"),
                               
                               HTML('<center><img src="hover_fc_group.png" style="width:200px">   <img src="hover_gene_group.png" style="width:200px">   <img src="hover_gene_connect.png" style="width:200px">   <img src="hover_hs.png" style="width:200px"></center><br>'),
@@ -790,7 +798,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                               # tags$p("Once an ontological term is selected to generate a diagram in the Group Comparison Tool, genes in the chord diagram can be found here, along with their amplitude change coefficient categories and hours shifted (phase) values."),
                               
                               HTML('<center><h2>Information Used<br></h2></center>'),
-                              HTML("For ontologies, this <a href='https://www.ebi.ac.uk/QuickGO/' target='_blank'>website</a>  is used to look up GO terms. Information on protein-protein information is sourced from STRINGdb version 10.5 for each organism. For specific gene information, <a href='https://www.uniprot.org/' target='_blank'>UniProtKB</a> is used. More version information can be found in the 'Data Version Information' tab in the Create ENCORE file section."),
+                              HTML(paste0("For ontologies, this <a href='https://www.ebi.ac.uk/QuickGO/' target='_blank'>website</a>  is used to look up GO terms. Information on protein-protein information is sourced from STRINGdb v", vers_string," for each organism. For specific gene information, <a href='https://www.uniprot.org/' target='_blank'>UniProtKB</a> is used. More version information can be found in the 'Data Version Information' tab in the Create ENCORE file section.")),
                               
                               HTML('<center><h2>Contact and Version Information</h2></center>'),
                               tags$p(HTML("If you are using the results from this app or want to learn about its methods, please <a href='https://github.com/delosh653/ENCORE' target='_blank'>cite us</a>. Additionally, please cite <a href='https://dl.acm.org/citation.cfm?id=3107420&CFID=826084181&CFTOKEN=52238765' target='_blank'>ECHO</a>.")),
@@ -801,7 +809,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                               "- your dataset/file(s)",tags$br(),
                               "- your exact settings for the run (a screenshot will do)",tags$br(),
                               "- your exact error from the console window (a screenshot will do)",tags$br(),tags$br(),
-                              "All images created by ENCORE using data from: <a href='https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1000442' target='_blank'>Hughes et al. (2009)</a>.",
+                              HTML("All images created by ENCORE using data from: <a href='https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1000442' target='_blank'>Hughes et al. (2009)</a>."),
                               tags$br(),tags$br(),
                               tags$p(paste("ENCORE Version", vers_encore))
                               
@@ -914,7 +922,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                fluidRow(
                  column(width = 10, offset = 1,
                    HTML("<h2>Data Versioning:</h2>"),
-                   HTML("Protein link information was downloaded from <a href='https://string-db.org/'>STRING v11.0</a>, and names were mapped to STRING identifiers using the STRINGdb package listed below. Whole genome backgrounds were sourced from the <a href='http://www.pantherdb.org/' target='_blank'>PANTHER</a> database using v14.0, accessed on 01/25/2019.<br><br>"),
+                   HTML(paste0("Protein link information was downloaded from <a href='https://string-db.org/'>STRING v",vers_string,"</a>, and names were mapped to STRING identifiers using the STRINGdb package listed below. Whole genome backgrounds were sourced from the <a href='http://www.pantherdb.org/' target='_blank'>PANTHER</a> database using v14.0, accessed on 01/25/2019.<br><br>")),
                    ("CRAN Package information:"),tags$br(),
                    ("- shiny v1.2.0"),tags$br(),
                    ("- r2d3 v0.2.3"),tags$br(),
@@ -1010,18 +1018,21 @@ server <-  function(input, output, session) {
     }
   })
   
+  output$Help_ont_term=renderUI({ # upper and lower limits for rhythms help
+    if(input$ont_term_help%%2){
+      helpText("Choose an ontological term by either scrolling through the list, or by pressing backspace and typing a specific term. Terms with asterisks next to them indicate significance by the ontology cutoff specified when creating the ENCORE file. If NA appears, there are no significant terms for the given AC category and ontology type. Choosing the root node of the ontology (such as 'biological_process') will not result in a map, since there is only 1 node.")
+    }
+    else{
+      return()
+    }
+  })
+  
   # ontology explorer back end ----
   
   observeEvent(input$dat_load,{
     withProgress(message = "Loading Data!", value = 0, {
       incProgress(1/2, detail = paste("Loading selected data. Started on:",Sys.time()))
       load(input$dat_select$datapath, envir = globalenv())
-      # fc_results <<- fc_results
-      # total_results <<- total_results
-      # map_sub.df <<- map_sub.df
-      # timen <<- timen
-      # num_reps <<- num_reps
-      # no_sig <<- no_sig
       
       end_num <<- 16
       if (user_input$run_conf){
@@ -1030,6 +1041,15 @@ server <-  function(input, output, session) {
       
       map_sub.df <- map_sub.df[!is.na(map_sub.df$query),]
       map_sub.df$Osc.Type <- as.character(map_sub.df$Osc.Type)
+      
+      # making backwards compatible (<v3)
+      if (is.null(user_input_ont$ont_group)){
+        user_input_ont$ont_group <<- "NOT SAVED BEFORE v3 (likewise for focused genes, which defaults to all)"
+      } 
+      
+      if (is.null(user_input_ont$gene_focus)){
+        user_input_ont$gene_focus <<- map_sub.df$query
+      } 
       
       if (exists("fc_results") & !is.null(links)){
         if (!input$fc_map %in% no_sig[[input$ont]]){
@@ -1057,7 +1077,7 @@ server <-  function(input, output, session) {
   observeEvent(input$org_load,{
     withProgress(message = "Loading Organism!", value = 0, {
       incProgress(1/2, detail = paste("Loading selected organism. Started on:",Sys.time()))
-      links <<- fread(paste0("links//",input$org_select,".protein.links.v11.0.txt"))
+      links <<- fread(paste0("links//",input$org_select,".protein.links.v",vers_string,".txt"))
       
       bg <<- read.csv(paste0("data//",input$org_select,"_background.csv"), stringsAsFactors = F)
       
@@ -1134,7 +1154,8 @@ server <-  function(input, output, session) {
   })
   
   observeEvent(input$update_map, {
-    if (exists("fc_results") & !is.null(links) & input$ont_in_map!= "" & !input$ont_in_map %in% c("biological_process", "molecular_function", "cellular_component")){
+    if (exists("fc_results") & !is.null(links) & input$ont_in_map!= "NA" & !input$ont_in_map %in% c("biological_process", "molecular_function", "cellular_component")){
+      
       #get example graph
       ex_graph <- fc_results[[input$fc_map]][[input$ont]][["go_data"]]@graph
       care_group <- fc_results[[input$fc_map]][[input$ont]][["go_results"]]
@@ -1326,7 +1347,7 @@ server <-  function(input, output, session) {
         
         # int_genes <- int_genes[!duplicated(int_genes)]
         
-        # string db ----
+        # string db ---
         
         # grab gene stringdb ids, original names
         
@@ -1357,11 +1378,7 @@ server <-  function(input, output, session) {
         if (!is_all_range){
           gene_map.df <- gene_map.df[gene_map.df$period <= high_range & gene_map.df$period >= low_range,]
         }
-        gene_map.df <- gene_map.df[gene_map.df$pval < user_input_ont$sig_level,]
-        
-        gene_map.df <- gene_map.df[!is.na(gene_map.df$STRING_id),]
-        gene_map.df <- gene_map.df[order(gene_map.df$fc_cat_genes),]
-        gene_map.df <- gene_map.df[!duplicated(gene_map.df$STRING_id),]
+        gene_map.df <- gene_map.df[gene_map.df$pval < user_input_ont$sig_level & gene_map.df$int_genes %in% user_input_ont$gene_focus,]
         
         # if we toggle that we only want to see specified signifiance of group, remove others
         if (input$togg_sig_groups){
@@ -1381,11 +1398,29 @@ server <-  function(input, output, session) {
           gene_map.df <- gene_map.df[gene_map.df$fc_cat_genes %in% keep,]
         }
         
+        # KEEP GENES THAT DO NOT HAVE STRING_ID MAPPING
+        no_string <- gene_map.df[is.na(gene_map.df$STRING_id), "int_genes_orig"]
+        
+        gene_map.df <- gene_map.df[!is.na(gene_map.df$STRING_id),]
+        gene_map.df <- gene_map.df[order(gene_map.df$fc_cat_genes),]
+        gene_map.df <- gene_map.df[!duplicated(gene_map.df$STRING_id),]
+        
         # get connections - hmmmm
         # these are connections that only appear in the gene ontology
         temp <- links[links$protein1 %in% gene_map.df$STRING_id & links$protein2 %in% gene_map.df$STRING_id,]
+        # sort by highest to lowest combined score
         temp <- temp[order(-combined_score),]
+        # get rid of reverse duplicates, since doing birectional
+        temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        
+        # at the moment, the threshold is 0
+        thresh <- as.numeric(temp[nrow(temp),"combined_score"])
+        num_low <- 0
         if (nrow(temp) > as.numeric(serverValues$num_chord)){
+          # count the number of links that were kicked out for not being above the threshold
+          num_low <- nrow(temp) - as.numeric(serverValues$num_chord)
+          thresh <- as.numeric(temp[as.numeric(serverValues$num_chord),"combined_score"])
+          
           temp <- temp[1:as.numeric(serverValues$num_chord),]
         }
         interacts <- as.data.frame(temp)
@@ -1413,24 +1448,17 @@ server <-  function(input, output, session) {
             connect.df[interacts$from[i] , interacts$to[i]] <- 1
           }
           # remove rows and columns with no connections
+          # keep their names
           connect.df <- connect.df[rowSums(connect.df) > 0 | colSums(connect.df) > 0,
                                    rowSums(connect.df) > 0 | colSums(connect.df) > 0]
         }
-        # make everything 1 to 1 - THIS CAN BE FASTER
-        # for (i in 1:nrow(connect.df)){
-        #   for (j in 1:nrow(connect.df)){
-        #     if (connect.df[i,j] > 0 & connect.df[j,i] == 0){
-        #       connect.df[j,i] <- 1
-        #     }
-        #     if (connect.df[j,i] > 0 & connect.df[i,j] == 0){
-        #       connect.df[i,j] <- 1
-        #     }
-        #   }
-        # }
-        
+        # make a symmetric matrix
         connect.df <- (t(connect.df)>0 & connect.df==0)+connect.df
         
-        # heat maps ----
+        # now get the ones that didn't make the cut
+        kicked_out <- gene_map.df$int_genes_orig[!gene_map.df$int_genes_orig %in% rownames(connect.df)]
+        
+        # heat maps ---
         
         int_genes_care <- rownames(connect.df)
         
@@ -1566,11 +1594,32 @@ server <-  function(input, output, session) {
         serverValues[["color_pal_chord"]] <- color_pal[as.character(temp_tab$Var1[temp_tab$Freq!=0])]
         serverValues[["color_pal_dark_chord"]] <- color_pal_dark[as.character(temp_tab$Var1[temp_tab$Freq!=0])]
         
+        if (sum(serverValues$tot_fc_cats) <= 1){
+          serverValues[["group_comp_below_text"]] <- 
+            HTML(
+              paste0(
+                "<b>NOT ENOUGH GENES REMAINING TO CREATE GROUP COMPARISON (need at least 2)</b><br><br>",
+                "<b>GO Term:</b> ", path_trace[length(path_trace)], "<br>",
+                "<b>Genes sig. annotated for GO Term with no STRING identifier: </b>", paste(no_string, collapse = " "), "<br>",
+                "<b>Genes removed for having no connections or not having a high enough score (for the selected maximum number of genes): </b>", paste(kicked_out, collapse = " "), "<br>",
+                "<b>Minimum combined STRING score of represented connections:</b>"
+              )
+            )
+        } else {
+          serverValues[["group_comp_below_text"]] <- 
+            HTML(
+              paste0(
+                "<b>GO Term:</b> ", path_trace[length(path_trace)], "<br>",
+                "<b>Genes sig. annotated for GO Term with no STRING identifier: </b>", paste(no_string, collapse = " "), "<br>",
+                "<b>Genes removed for having no connections or not having a high enough score (for the selected maximum number of genes): </b>", paste(kicked_out, collapse = " "), "<br>",
+                "<b>Minimum combined STRING score of represented connections:</b>", thresh
+              )
+            )
+        }
+        
         if (!grepl("\\(", path_trace[length(path_trace)])){
           path_trace[length(path_trace)] <<- paste0(path_trace[length(path_trace)]," (",nrow(connect.df)," genes, ",sum(serverValues$chord_dat)/2," chords)")
         }
-        
-        # go_chord_heatmap.js
       }
       incProgress(1/3, detail = paste("Finished! Started on:",Sys.time()))
     }
@@ -1668,9 +1717,12 @@ server <-  function(input, output, session) {
         
         # int_genes <- int_genes[!duplicated(int_genes)]
         
-        # string db ----
+        orig_sig <- serverValues$sig
+        
+        # string db ---
         
         # grab gene stringdb ids, original names
+        
         gene_map.df <- data.frame("int_genes"=int_genes, stringsAsFactors = F)#, "fc_cat_genes" = fc_cat_genes)
         rownames(map_sub.df) <- map_sub.df$entrezgene
         gene_map.df$fc_cat_genes <- map_sub.df[gene_map.df$int_genes, "Osc.Type"]
@@ -1678,7 +1730,6 @@ server <-  function(input, output, session) {
         gene_map.df$int_genes_orig <- map_sub.df[gene_map.df$int_genes,"query"]
         gene_map.df$period <- map_sub.df[gene_map.df$int_genes,"Period"]
         gene_map.df$pval <- map_sub.df[gene_map.df$int_genes,user_input_ont$pval_cat]
-        
         # no factors!
         i <- sapply(gene_map.df, is.factor)
         gene_map.df[i] <- lapply(gene_map.df[i], as.character)
@@ -1699,10 +1750,7 @@ server <-  function(input, output, session) {
         if (!is_all_range){
           gene_map.df <- gene_map.df[gene_map.df$period <= high_range & gene_map.df$period >= low_range,]
         }
-        gene_map.df <- gene_map.df[gene_map.df$pval < user_input_ont$sig_level,]
-        gene_map.df <- gene_map.df[!is.na(gene_map.df$STRING_id),]
-        gene_map.df <- gene_map.df[order(gene_map.df$fc_cat_genes),]
-        gene_map.df <- gene_map.df[!duplicated(gene_map.df$STRING_id),]
+        gene_map.df <- gene_map.df[gene_map.df$pval < user_input_ont$sig_level & gene_map.df$int_genes %in% user_input_ont$gene_focus,]
         
         # if we toggle that we only want to see specified signifiance of group, remove others
         if (input$togg_sig_groups){
@@ -1711,9 +1759,9 @@ server <-  function(input, output, session) {
             go_results <- fc_results[[f]][[serverValues$ont]][["go_results"]]
             pval <- go_results[go_results$GO.ID == go_term,"classicFisher"]
             if (length(pval) > 0){
-              if (grepl("*",path_trace[length(path_trace)], fixed = T) & pval < user_input_ont$ont_sig_level){
+              if (orig_sig == "Significant" & pval < user_input_ont$ont_sig_level){
                 keep <- c(keep,f)
-              } else if (!grepl("*",path_trace[length(path_trace)], fixed = T) & pval >= user_input_ont$ont_sig_level){
+              } else if (orig_sig != "Significant" & pval >= user_input_ont$ont_sig_level){
                 keep <- c(keep,f)
               }
             }
@@ -1722,11 +1770,29 @@ server <-  function(input, output, session) {
           gene_map.df <- gene_map.df[gene_map.df$fc_cat_genes %in% keep,]
         }
         
+        # KEEP GENES THAT DO NOT HAVE STRING_ID MAPPING
+        no_string <- gene_map.df[is.na(gene_map.df$STRING_id), "int_genes_orig"]
+        
+        gene_map.df <- gene_map.df[!is.na(gene_map.df$STRING_id),]
+        gene_map.df <- gene_map.df[order(gene_map.df$fc_cat_genes),]
+        gene_map.df <- gene_map.df[!duplicated(gene_map.df$STRING_id),]
+        
         # get connections - hmmmm
         # these are connections that only appear in the gene ontology
         temp <- links[links$protein1 %in% gene_map.df$STRING_id & links$protein2 %in% gene_map.df$STRING_id,]
+        # sort by highest to lowest combined score
         temp <- temp[order(-combined_score),]
+        # get rid of reverse duplicates, since doing birectional
+        temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        
+        # at the moment, the threshold is 0
+        thresh <- as.numeric(temp[nrow(temp),"combined_score"])
+        num_low <- 0
         if (nrow(temp) > as.numeric(serverValues$num_chord)){
+          # count the number of links that were kicked out for not being above the threshold
+          num_low <- nrow(temp) - as.numeric(serverValues$num_chord)
+          thresh <- as.numeric(temp[as.numeric(serverValues$num_chord),"combined_score"])
+          
           temp <- temp[1:as.numeric(serverValues$num_chord),]
         }
         interacts <- as.data.frame(temp)
@@ -1747,7 +1813,6 @@ server <-  function(input, output, session) {
         
         # now make a matrix
         connect.df <- data.frame(matrix(0,length(gene_map.df$int_genes_orig),length(gene_map.df$int_genes_orig)))
-        # rownames(map_sub.df) <- map_sub.df$query
         colnames(connect.df) <- rownames(connect.df) <- gene_map.df$int_genes_orig
         
         if (nrow(interacts) > 0){
@@ -1755,24 +1820,17 @@ server <-  function(input, output, session) {
             connect.df[interacts$from[i] , interacts$to[i]] <- 1
           }
           # remove rows and columns with no connections
+          # keep their names
           connect.df <- connect.df[rowSums(connect.df) > 0 | colSums(connect.df) > 0,
                                    rowSums(connect.df) > 0 | colSums(connect.df) > 0]
         }
-        # make everything 1 to 1 - THIS CAN BE FASTER
-        # for (i in 1:nrow(connect.df)){
-        #   for (j in 1:nrow(connect.df)){
-        #     if (connect.df[i,j] > 0 & connect.df[j,i] == 0){
-        #       connect.df[j,i] <- 1
-        #     }
-        #     if (connect.df[j,i] > 0 & connect.df[i,j] == 0){
-        #       connect.df[i,j] <- 1
-        #     }
-        #   }
-        # }
-        
+        # make a symmetric matrix
         connect.df <- (t(connect.df)>0 & connect.df==0)+connect.df
         
-        # heat maps ----
+        # now get the ones that didn't make the cut
+        kicked_out <- gene_map.df$int_genes_orig[!gene_map.df$int_genes_orig %in% rownames(connect.df)]
+        
+        # heat maps ---
         
         int_genes_care <- rownames(connect.df)
         
@@ -1790,11 +1848,10 @@ server <-  function(input, output, session) {
         hm_hours_shifted <- rep(0,nrow(hm_total))
         hm_fc <- rep("",nrow(hm_total))
         count_next <- 0
+        
         for (f in serverValues$fc_groups){
           int_sub_tr <- int_tr[int_tr$`Oscillation Type` == f & !is.na(int_tr$`Oscillation Type`),]
-          
           if (nrow(int_sub_tr) > 0){
-            
             # there should be no na rows in this data, by default
             # adjust phase
             int_sub_tr$`Phase Shift`[int_sub_tr$Initial.Amplitude < 0] <- int_sub_tr$`Phase Shift`[int_sub_tr$Initial.Amplitude < 0]+pi
@@ -1832,7 +1889,6 @@ server <-  function(input, output, session) {
               hm_mat <- hm_mat - all_row_mean
               
               
-              
             } else {
               # get fitted values for heatmap instead
               hm_mat <- as.matrix(int_sub_tr[,(end_num+length(timen)*num_reps+1):ncol(int_sub_tr)])
@@ -1844,7 +1900,6 @@ server <-  function(input, output, session) {
               gene_max <- max(abs((hm_mat[i,])),na.rm = TRUE)
               hm_mat[i,] <- hm_mat[i,]/gene_max 
             }
-            
             #sort by phase shift, if more than 1 gene
             if (nrow(hm_mat) > 1){
               ord <- order(int_sub_tr$`Phase Shift`)
@@ -1873,6 +1928,7 @@ server <-  function(input, output, session) {
         if (nrow(connect.df)>1){
           connect.df <- connect.df[hm_names,hm_names]
         }
+        
         # lowest you can have is one connection
         all_width <- colSums(connect.df)
         all_width[all_width==0] <- .1
@@ -1901,21 +1957,46 @@ server <-  function(input, output, session) {
         serverValues[["tot_fc_cats"]] <- as.numeric(temp_tab$Freq)
         serverValues[["chord_dat"]] <- connect.df
         
+        serverValues[["gene.df"]] <- data.frame("Gene.Name"=rownames(connect.df),
+                                                "Osc.Type"=hm_fc,
+                                                "Hours.Shifted"=hm_hours_shifted)
+        
         
         serverValues[["fc_rep"]] <- temp_tab$Var1[temp_tab$Freq!=0]
         serverValues[["color_pal_chord"]] <- color_pal[as.character(temp_tab$Var1[temp_tab$Freq!=0])]
         serverValues[["color_pal_dark_chord"]] <- color_pal_dark[as.character(temp_tab$Var1[temp_tab$Freq!=0])]
         
-        serverValues[["gene.df"]] <- data.frame("Gene.Name"=rownames(connect.df),
-                                                "Osc.Type"=hm_fc,
-                                                "Hours.Shifted"=hm_hours_shifted)
+        # remove the old listing of genes and chords
+        path_trace[length(path_trace)] <<- strsplit(path_trace[length(path_trace)], split = " \\(")[[1]][1]
         
-        top_str <- strsplit(path_trace[length(path_trace)],split = " (",fixed = TRUE)
-        path_trace[length(path_trace)] <<- paste0(top_str[[1]][1],
-                                                  "  (",nrow(connect.df)," genes, ",sum(serverValues$chord_dat)/2," chords)")
-        # go_chord_heatmap.js
-        serverValues[["go_name"]] <- go_name
+        if (sum(serverValues$tot_fc_cats) <= 1){
+          serverValues[["group_comp_below_text"]] <- 
+            HTML(
+              paste0(
+                "<b>NOT ENOUGH GENES REMAINING TO CREATE GROUP COMPARISON (need at least 2)</b><br><br>",
+                "<b>GO Term:</b> ", path_trace[length(path_trace)], "<br>",
+                "<b>Genes sig. annotated for GO Term with no STRING identifier: </b>", paste(no_string, collapse = " "), "<br>",
+                "<b>Genes removed for having no connections or not having a high enough score (for the selected maximum number of genes): </b>", paste(kicked_out, collapse = " "), "<br>",
+                "<b>Minimum combined STRING score of represented connections:</b>"
+              )
+            )
+        } else {
+          serverValues[["group_comp_below_text"]] <- 
+            HTML(
+              paste0(
+                "<b>GO Term:</b> ", path_trace[length(path_trace)], "<br>",
+                "<b>Genes sig. annotated for GO Term with no STRING identifier: </b>", paste(no_string, collapse = " "), "<br>",
+                "<b>Genes removed for having no connections or not having a high enough score (for the selected maximum number of genes): </b>", paste(kicked_out, collapse = " "), "<br>",
+                "<b>Minimum combined STRING score of represented connections:</b>", thresh
+              )
+            )
+        }
       }
+      
+      if (!grepl("\\(", path_trace[length(path_trace)])){
+        path_trace[length(path_trace)] <<- paste0(path_trace[length(path_trace)]," (",nrow(connect.df)," genes, ",sum(serverValues$chord_dat)/2," chords)")
+      }
+      
       incProgress(1/2, detail = paste("Finished! Started on:",Sys.time()))
     }
   }))
@@ -1956,7 +2037,7 @@ server <-  function(input, output, session) {
           }
         }
         
-        if (hasChild){
+        # if (hasChild){
           prev_parents <<- c(prev_parents, curr)
           # if (curr != ""){
           #   path_trace <<- c(path_trace, curr)
@@ -1964,7 +2045,7 @@ server <-  function(input, output, session) {
           
           prev_sig <<- c(prev_sig, serverValues$sig)
           curr <<- input$pie_forward
-        }
+        # }
       }
       
       orig_sig <- serverValues$sig
@@ -1999,7 +2080,9 @@ server <-  function(input, output, session) {
           }
         }
         
-        if (input$pie_forward == "B" || hasChild){
+        hasChild <- T
+        
+        if (input$pie_forward == "B"|| hasChild){
           path_trace <<- c(path_trace, go_name)
           
           if (orig_sig == "Significant"){
@@ -2023,9 +2106,10 @@ server <-  function(input, output, session) {
         
         # int_genes <- int_genes[!duplicated(int_genes)]
         
-        # string db ----
+        # string db ---
         
         # grab gene stringdb ids, original names
+        
         gene_map.df <- data.frame("int_genes"=int_genes, stringsAsFactors = F)#, "fc_cat_genes" = fc_cat_genes)
         rownames(map_sub.df) <- map_sub.df$entrezgene
         gene_map.df$fc_cat_genes <- map_sub.df[gene_map.df$int_genes, "Osc.Type"]
@@ -2033,7 +2117,6 @@ server <-  function(input, output, session) {
         gene_map.df$int_genes_orig <- map_sub.df[gene_map.df$int_genes,"query"]
         gene_map.df$period <- map_sub.df[gene_map.df$int_genes,"Period"]
         gene_map.df$pval <- map_sub.df[gene_map.df$int_genes,user_input_ont$pval_cat]
-        
         # no factors!
         i <- sapply(gene_map.df, is.factor)
         gene_map.df[i] <- lapply(gene_map.df[i], as.character)
@@ -2054,10 +2137,7 @@ server <-  function(input, output, session) {
         if (!is_all_range){
           gene_map.df <- gene_map.df[gene_map.df$period <= high_range & gene_map.df$period >= low_range,]
         }
-        gene_map.df <- gene_map.df[gene_map.df$pval < user_input_ont$sig_level,]
-        gene_map.df <- gene_map.df[!is.na(gene_map.df$STRING_id),]
-        gene_map.df <- gene_map.df[order(gene_map.df$fc_cat_genes),]
-        gene_map.df <- gene_map.df[!duplicated(gene_map.df$STRING_id),]
+        gene_map.df <- gene_map.df[gene_map.df$pval < user_input_ont$sig_level & gene_map.df$int_genes %in% user_input_ont$gene_focus,]
         
         # if we toggle that we only want to see specified signifiance of group, remove others
         if (input$togg_sig_groups){
@@ -2077,11 +2157,29 @@ server <-  function(input, output, session) {
           gene_map.df <- gene_map.df[gene_map.df$fc_cat_genes %in% keep,]
         }
         
+        # KEEP GENES THAT DO NOT HAVE STRING_ID MAPPING
+        no_string <- gene_map.df[is.na(gene_map.df$STRING_id), "int_genes_orig"]
+        
+        gene_map.df <- gene_map.df[!is.na(gene_map.df$STRING_id),]
+        gene_map.df <- gene_map.df[order(gene_map.df$fc_cat_genes),]
+        gene_map.df <- gene_map.df[!duplicated(gene_map.df$STRING_id),]
+        
         # get connections - hmmmm
         # these are connections that only appear in the gene ontology
         temp <- links[links$protein1 %in% gene_map.df$STRING_id & links$protein2 %in% gene_map.df$STRING_id,]
+        # sort by highest to lowest combined score
         temp <- temp[order(-combined_score),]
+        # get rid of reverse duplicates, since doing birectional
+        temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        
+        # at the moment, the threshold is 0
+        thresh <- as.numeric(temp[nrow(temp),"combined_score"])
+        num_low <- 0
         if (nrow(temp) > as.numeric(serverValues$num_chord)){
+          # count the number of links that were kicked out for not being above the threshold
+          num_low <- nrow(temp) - as.numeric(serverValues$num_chord)
+          thresh <- as.numeric(temp[as.numeric(serverValues$num_chord),"combined_score"])
+          
           temp <- temp[1:as.numeric(serverValues$num_chord),]
         }
         interacts <- as.data.frame(temp)
@@ -2102,7 +2200,6 @@ server <-  function(input, output, session) {
         
         # now make a matrix
         connect.df <- data.frame(matrix(0,length(gene_map.df$int_genes_orig),length(gene_map.df$int_genes_orig)))
-        # rownames(map_sub.df) <- map_sub.df$query
         colnames(connect.df) <- rownames(connect.df) <- gene_map.df$int_genes_orig
         
         if (nrow(interacts) > 0){
@@ -2110,24 +2207,17 @@ server <-  function(input, output, session) {
             connect.df[interacts$from[i] , interacts$to[i]] <- 1
           }
           # remove rows and columns with no connections
+          # keep their names
           connect.df <- connect.df[rowSums(connect.df) > 0 | colSums(connect.df) > 0,
                                    rowSums(connect.df) > 0 | colSums(connect.df) > 0]
         }
-        # make everything 1 to 1 - THIS CAN BE FASTER
-        # for (i in 1:nrow(connect.df)){
-        #   for (j in 1:nrow(connect.df)){
-        #     if (connect.df[i,j] > 0 & connect.df[j,i] == 0){
-        #       connect.df[j,i] <- 1
-        #     }
-        #     if (connect.df[j,i] > 0 & connect.df[i,j] == 0){
-        #       connect.df[i,j] <- 1
-        #     }
-        #   }
-        # }
-        
+        # make a symmetric matrix
         connect.df <- (t(connect.df)>0 & connect.df==0)+connect.df
         
-        # heat maps ----
+        # now get the ones that didn't make the cut
+        kicked_out <- gene_map.df$int_genes_orig[!gene_map.df$int_genes_orig %in% rownames(connect.df)]
+        
+        # heat maps ---
         
         int_genes_care <- rownames(connect.df)
         
@@ -2139,7 +2229,7 @@ server <-  function(input, output, session) {
           int_tr$`Oscillation Type`[int_tr$`Oscillation Type` %in% c("Harmonic","Damped","Forced")] <- "All.Circ.wo.OE.RE"
         }
         
-        hm_total <- matrix(0,nrow(int_tr),length((end_num+1):((end_num)+length(timen)*1)))
+        hm_total <- matrix(0,nrow(int_tr),length((end_num+1):(end_num+length(timen)*1)))
         hm_order <- rep(0,nrow(hm_total))
         hm_names <- rep("",nrow(hm_total))
         hm_hours_shifted <- rep(0,nrow(hm_total))
@@ -2148,9 +2238,7 @@ server <-  function(input, output, session) {
         
         for (f in serverValues$fc_groups){
           int_sub_tr <- int_tr[int_tr$`Oscillation Type` == f & !is.na(int_tr$`Oscillation Type`),]
-          
           if (nrow(int_sub_tr) > 0){
-            
             # there should be no na rows in this data, by default
             # adjust phase
             int_sub_tr$`Phase Shift`[int_sub_tr$Initial.Amplitude < 0] <- int_sub_tr$`Phase Shift`[int_sub_tr$Initial.Amplitude < 0]+pi
@@ -2188,7 +2276,6 @@ server <-  function(input, output, session) {
               hm_mat <- hm_mat - all_row_mean
               
               
-              
             } else {
               # get fitted values for heatmap instead
               hm_mat <- as.matrix(int_sub_tr[,(end_num+length(timen)*num_reps+1):ncol(int_sub_tr)])
@@ -2200,7 +2287,6 @@ server <-  function(input, output, session) {
               gene_max <- max(abs((hm_mat[i,])),na.rm = TRUE)
               hm_mat[i,] <- hm_mat[i,]/gene_max 
             }
-            
             #sort by phase shift, if more than 1 gene
             if (nrow(hm_mat) > 1){
               ord <- order(int_sub_tr$`Phase Shift`)
@@ -2229,6 +2315,7 @@ server <-  function(input, output, session) {
         if (nrow(connect.df)>1){
           connect.df <- connect.df[hm_names,hm_names]
         }
+        
         # lowest you can have is one connection
         all_width <- colSums(connect.df)
         all_width[all_width==0] <- .1
@@ -2261,16 +2348,37 @@ server <-  function(input, output, session) {
                                                 "Osc.Type"=hm_fc,
                                                 "Hours.Shifted"=hm_hours_shifted)
         
-        if (!grepl("\\(", path_trace[length(path_trace)])){
-          path_trace[length(path_trace)] <<- paste0(path_trace[length(path_trace)]," (",nrow(connect.df)," genes, ",sum(serverValues$chord_dat)/2," chords)")
-        }
         
-        # go_chord_heatmap.js
-        serverValues[["go_name"]] <- go_name
         serverValues[["fc_rep"]] <- temp_tab$Var1[temp_tab$Freq!=0]
         serverValues[["color_pal_chord"]] <- color_pal[as.character(temp_tab$Var1[temp_tab$Freq!=0])]
         serverValues[["color_pal_dark_chord"]] <- color_pal_dark[as.character(temp_tab$Var1[temp_tab$Freq!=0])]
         
+        if (sum(serverValues$tot_fc_cats) <= 1){
+          serverValues[["group_comp_below_text"]] <- 
+            HTML(
+              paste0(
+                "<b>NOT ENOUGH GENES REMAINING TO CREATE GROUP COMPARISON (need at least 2)</b><br><br>",
+                "<b>GO Term:</b> ", path_trace[length(path_trace)], "<br>",
+                "<b>Genes sig. annotated for GO Term with no STRING identifier: </b>", paste(no_string, collapse = " "), "<br>",
+                "<b>Genes removed for having no connections or not having a high enough score (for the selected maximum number of genes): </b>", paste(kicked_out, collapse = " "), "<br>",
+                "<b>Minimum combined STRING score of represented connections:</b>"
+              )
+            )
+        } else {
+          serverValues[["group_comp_below_text"]] <- 
+            HTML(
+              paste0(
+                "<b>GO Term:</b> ", path_trace[length(path_trace)], "<br>",
+                "<b>Genes sig. annotated for GO Term with no STRING identifier: </b>", paste(no_string, collapse = " "), "<br>",
+                "<b>Genes removed for having no connections or not having a high enough score (for the selected maximum number of genes): </b>", paste(kicked_out, collapse = " "), "<br>",
+                "<b>Minimum combined STRING score of represented connections:</b>", thresh
+              )
+            )
+        }
+        
+        if (!grepl("\\(", path_trace[length(path_trace)])){
+          path_trace[length(path_trace)] <<- paste0(path_trace[length(path_trace)]," (",nrow(connect.df)," genes, ",sum(serverValues$chord_dat)/2," chords)")
+        }
       }
       
       incProgress(1/3, detail = paste("Finished! Started on:",Sys.time()))
@@ -2339,10 +2447,194 @@ server <-  function(input, output, session) {
     
   })
   
-  observeEvent(input$go_url,{
-    serverValues[["url"]] <- paste0("https://www.ebi.ac.uk/QuickGO/term/",input$go_url)
-    serverValues[["term_of_interest"]] <- input$go_url 
+  # observing clicking on a go term on the ontology map
+  observeEvent(input$go_url_map,{
+    f <- input$fc_map
+    go_data <- fc_results[[f]][[input$ont]][["go_data"]]
+    care_group <- fc_results[[f]][[input$ont]][["go_results"]]
+    go_genes <- genesInTerm(go_data, input$go_url_map)[[input$go_url_map]]
+    map_intr <- map_sub.df[map_sub.df$entrezgene %in% go_genes,]
+    # subset to only our category and significance
+    # have to change f if all circadian w/wo oe/re
+    if (f == "All.Circ"){
+      f <- c("Overexpressed","Repressed","Harmonic","Forced","Damped")
+    } else if (f == "All.Circ.wo.OE.RE"){
+      f <- c("Harmonic","Forced","Damped")
+    }
+    
+    if (!is_all_range){
+      map_intr_sub <- map_intr[map_intr$Osc.Type %in% f & map_intr[[user_input_ont$pval_cat]] < user_input_ont$sig_level &
+                                 map_intr$Period <= high_range & map_intr$Period >= low_range & map_intr$query %in% user_input_ont$gene_focus,]
+    } else {
+      map_intr_sub <- map_intr[map_intr$Osc.Type %in% f & map_intr[[user_input_ont$pval_cat]] < user_input_ont$sig_level & 
+                                 map_intr$query %in% user_input_ont$gene_focus,]
+    }
+    go_genes_sig <- map_intr_sub$query[!is.na(map_intr_sub$query)]
+    
+    # get the term name
+    child <- care_group[which(input$go_url_map==care_group$GO.ID)[1],"Term"]
+    
+    serverValues[["url"]] <- paste0("https://www.ebi.ac.uk/QuickGO/term/",input$go_url_map)
+    serverValues[["term_of_interest"]] <- child 
     serverValues[["is_go"]] <- TRUE
+    
+    start_string <- paste0("<b>AC Category: </b>", input$fc_map, "<br>")
+    if (input$fc_map == "All.Circ"){
+      start_string <- paste0(
+        "<b>AC Category: </b>", input$fc_map, "<br>",
+        "<b>&emsp; - Total no. of sig. genes: </b>", length(go_genes_sig), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Repressed: </b>", sum(map_intr_sub$Osc.Type == "Repressed", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Damped: </b>", sum(map_intr_sub$Osc.Type == "Damped", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Harmonic: </b>", sum(map_intr_sub$Osc.Type == "Harmonic", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Forced: </b>", sum(map_intr_sub$Osc.Type == "Forced", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Overexpressed: </b>", sum(map_intr_sub$Osc.Type == "Overexpressed", na.rm = T), "<br>"
+      )
+    } else if (input$fc_map == "All.Circ.wo.OE.RE"){
+      start_string <- paste0(
+        "<b>AC Category: </b>", input$fc_map, "<br>",
+        "<b>&emsp; - Total no. of sig. genes: </b>", length(go_genes_sig), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Damped: </b>", sum(map_intr_sub$Osc.Type == "Damped", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Harmonic: </b>", sum(map_intr_sub$Osc.Type == "Harmonic", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Forced: </b>", sum(map_intr_sub$Osc.Type == "Forced", na.rm = T), "<br>"
+      )
+    }
+    
+    serverValues[["ont_map_below_text"]] <-
+      HTML(
+        paste0(
+          start_string,
+          "<b>GO Term: </b>", serverValues$term_of_interest, "<br>",
+          "<b>GO ID: </b>", input$go_url_map, "<br>",
+          "<b>GO Term Level: </b>", care_group[which(input$go_url_map==care_group$GO.ID)[1],"Level"], "<br>",
+          "<b>More information about this GO Term: </b>", "<a href='", serverValues$url,"' target='_blank'>QuickGO</a>", "<br>",
+          "<b>Enrichment Information: </b>", "<br>",
+          "<b>&emsp; - Fraction Annotated: </b>", care_group[which(input$go_url_map==care_group$GO.ID)[1],"Significant"]/care_group[which(input$go_url_map==care_group$GO.ID)[1],"Annotated"], "<br>",
+          "<b>&emsp;&emsp;   - Number of sig. genes in AC Category annotated for this GO Term: </b>", care_group[which(input$go_url_map==care_group$GO.ID)[1],"Significant"], "<br>",
+          "<b>&emsp;&emsp;   - Total number of genes annotated for this GO Term: </b>", care_group[which(input$go_url_map==care_group$GO.ID)[1],"Annotated"], "<br>",
+          "<b>&emsp; - P-Value: </b>", care_group[which(input$go_url_map==care_group$GO.ID)[1],"classicFisher"], "<br>",
+          "<b>&emsp; - P-Value Type: </b>", user_input_ont$ont_pval_cat, "<br>",
+          "<b>&emsp; - Fold Enrichment: </b>", care_group[which(input$go_url_map==care_group$GO.ID)[1],"Fold.Enrichment"], "<br>",
+          "<b>&emsp;&emsp;   - Number of sig. genes in AC Category annotated for the GO Term: </b>", care_group[which(input$go_url_map==care_group$GO.ID)[1],"Significant"], "<br>",
+          "<b>&emsp;&emsp;   - Number of genes Expected for the GO Term: </b>", care_group[which(input$go_url_map==care_group$GO.ID)[1],"Expected"], "<br>",
+          "<b>List of sig. genes in AC Category annotated : </b>", "<br>",
+          paste(go_genes_sig, collapse = " ")
+          
+        )
+      )
+  })
+  
+  # observing click on a go term on the ontology navigator
+  observeEvent(input$go_url_nav,{
+    for (f in serverValues$fc_groups){
+      if (!f %in% no_sig[[serverValues$ont]]){
+        go_data <- fc_results[[f]][[input$ont]][["go_data"]]
+        care_group <- fc_results[[f]][[serverValues$ont]][["go_results"]]
+        if (input$go_url_nav %in% care_group$GO.ID){
+          go_row <- which(care_group$GO.ID == input$go_url_nav)[1]
+          break
+        }
+      }
+    }
+    # get the term name
+    child <- care_group[go_row,"Term"]
+    
+    serverValues[["url"]] <- paste0("https://www.ebi.ac.uk/QuickGO/term/",input$go_url_nav)
+    serverValues[["term_of_interest"]] <- child 
+    serverValues[["is_go"]] <- TRUE
+    
+    # calculate the total amount of significant genes
+    
+    serverValues[["ont_nav_below_text"]] <-
+      HTML(
+        paste0(
+          "<b>GO Term: </b>", serverValues$term_of_interest, "<br>",
+          "<b>GO ID: </b>", input$go_url_nav, "<br>",
+          "<b>GO Term Level: </b>", care_group[go_row,"Level"], "<br>",
+          "<b>More information about this GO Term: </b>", "<a href='", serverValues$url,"' target='_blank'>QuickGO</a>", "<br>",
+          "<b>Total Fraction Annotated: </b>", serverValues$go.df[serverValues$go.df$GO_ID == input$go_url_nav,"Tot_Genes"], "<br>",
+          "<b>&emsp;&emsp;   - Number of sig. genes in all AC Categories annotated for this GO Term: </b>", care_group[go_row,"Annotated"]*serverValues$go.df[serverValues$go.df$GO_ID == input$go_url_nav,"Tot_Genes"], "<br>",
+          "<b>&emsp;&emsp;   - Total number of genes annotated for this GO Term: </b>", care_group[go_row,"Annotated"], "<br>"
+        )
+      )
+  })
+  
+  # observing click on an ac cat bar on the ontology map
+  observeEvent(input$fc_nav, {
+    # split fc nav into the go id and the category
+    f <- unlist(strsplit(input$fc_nav, " "))[1]
+    go_id <- unlist(strsplit(input$fc_nav, " "))[2]
+    
+    go_data <- fc_results[[f]][[input$ont]][["go_data"]]
+    go_genes <- genesInTerm(go_data, go_id)[[go_id]]
+    map_intr <- map_sub.df[map_sub.df$entrezgene %in% go_genes,]
+    # subset to only our category and significance
+    f_repl <- f
+    if (f == "All.Circ"){
+      f_repl <- c("Overexpressed","Repressed","Harmonic","Forced","Damped")
+    } else if (f == "All.Circ.wo.OE.RE"){
+      f_repl <- c("Harmonic","Forced","Damped")
+    }
+    
+    if (!is_all_range){
+      map_intr_sub <- map_intr[map_intr$Osc.Type %in% f_repl & map_intr[[user_input_ont$pval_cat]] < user_input_ont$sig_level &
+                                 map_intr$Period <= high_range & map_intr$Period >= low_range & map_intr$query %in% user_input_ont$gene_focus,]
+    } else {
+      map_intr_sub <- map_intr[map_intr$Osc.Type %in% f_repl & map_intr[[user_input_ont$pval_cat]] < user_input_ont$sig_level & 
+                                 map_intr$query %in% user_input_ont$gene_focus,]
+    }
+    go_genes_sig <- map_intr_sub$query[!is.na(map_intr_sub$query)]
+    
+    # get the term name
+    care_group <- fc_results[[f]][[input$ont]][["go_results"]]
+    child <- care_group[which(go_id==care_group$GO.ID)[1],"Term"]
+    
+    serverValues[["url"]] <- paste0("https://www.ebi.ac.uk/QuickGO/term/",go_id)
+    serverValues[["term_of_interest"]] <- child 
+    serverValues[["is_go"]] <- TRUE
+    
+    start_string <- paste0("<b>AC Category: </b>", f, "<br>")
+    if (f == "All.Circ"){
+      start_string <- paste0(
+        "<b>AC Category: </b>", f, "<br>",
+        "<b>&emsp; - Total no. of sig. genes: </b>", length(go_genes_sig), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Repressed: </b>", sum(map_intr_sub$Osc.Type == "Repressed", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Damped: </b>", sum(map_intr_sub$Osc.Type == "Damped", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Harmonic: </b>", sum(map_intr_sub$Osc.Type == "Harmonic", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Forced: </b>", sum(map_intr_sub$Osc.Type == "Forced", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Overexpressed: </b>", sum(map_intr_sub$Osc.Type == "Overexpressed", na.rm = T), "<br>"
+      )
+    } else if (f == "All.Circ.wo.OE.RE"){
+      start_string <- paste0(
+        "<b>AC Category: </b>", f, "<br>",
+        "<b>&emsp; - Total no. of sig. genes: </b>", length(go_genes_sig), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Damped: </b>", sum(map_intr_sub$Osc.Type == "Damped", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Harmonic: </b>", sum(map_intr_sub$Osc.Type == "Harmonic", na.rm = T), "<br>",
+        "<b>&emsp;&emsp; - No. of sig. genes Forced: </b>", sum(map_intr_sub$Osc.Type == "Forced", na.rm = T), "<br>"
+      )
+    }
+    
+    serverValues[["ont_nav_below_text"]] <-
+      HTML(
+        paste0(
+          start_string,
+          "<b>GO Term: </b>", serverValues$term_of_interest, "<br>",
+          "<b>GO ID: </b>", go_id, "<br>",
+          "<b>GO Term Level: </b>", care_group[which(go_id==care_group$GO.ID)[1],"Level"], "<br>",
+          "<b>More information about this GO Term: </b>", "<a href='", serverValues$url,"' target='_blank'>QuickGO</a>", "<br>",
+          "<b>Enrichment Information: </b>", "<br>",
+          "<b>&emsp; - Fraction Annotated: </b>", care_group[which(go_id==care_group$GO.ID)[1],"Significant"]/care_group[which(go_id==care_group$GO.ID)[1],"Annotated"], "<br>",
+          "<b>&emsp;&emsp;   - Number of sig. genes in AC Category annotated for this GO Term: </b>", care_group[which(go_id==care_group$GO.ID)[1],"Significant"], "<br>",
+          "<b>&emsp;&emsp;   - Total number of genes annotated for this GO Term: </b>", care_group[which(go_id==care_group$GO.ID)[1],"Annotated"], "<br>",
+          "<b>&emsp; - P-Value: </b>", care_group[which(go_id==care_group$GO.ID)[1],"classicFisher"], "<br>",
+          "<b>&emsp; - P-Value Type: </b>", user_input_ont$ont_pval_cat, "<br>",
+          "<b>&emsp; - Fold Enrichment: </b>", care_group[which(go_id==care_group$GO.ID)[1],"Fold.Enrichment"], "<br>",
+          "<b>&emsp;&emsp;   - Number of sig. genes in AC Category annotated for the GO Term: </b>", care_group[which(go_id==care_group$GO.ID)[1],"Significant"], "<br>",
+          "<b>&emsp;&emsp;   - Number of genes Expected for the GO Term: </b>", care_group[which(go_id==care_group$GO.ID)[1],"Expected"], "<br>",
+          "<b>List of sig. genes in AC Category annotated : </b>", "<br>",
+          paste(go_genes_sig, collapse = " ")
+          
+        )
+      )
   })
   
   observeEvent(input$togg_path, {
@@ -2447,7 +2739,8 @@ server <-  function(input, output, session) {
                             which_camp = "ont_nav",
                             path_trace = c(rbind(rev(path_trace),rep("^",length(path_trace))))[-(length(path_trace)*2)],
                             togg_path = serverValues$togg_path,
-                            togg_border = input$togg_border
+                            togg_border = input$togg_border,
+                            togg_label = input$togg_label
                            )
       )
     }
@@ -2494,14 +2787,15 @@ server <-  function(input, output, session) {
                           which_camp = "group_comp",
                           path_trace = c(rbind(rev(path_trace),rep("^",length(path_trace))))[-(length(path_trace)*2)],
                           togg_path = serverValues$togg_path,
-                          togg_border = input$togg_border
+                          togg_border = input$togg_border,
+                          togg_label = input$togg_label
            )
       )
     }
   })
   
   output$ont_map <- renderD3({ 
-    if (!is.null(input$update_map) && input$update_map > 0){
+    if (!is.null(input$update_map) && input$update_map > 0 & input$ont_in_map!= "NA" & !input$ont_in_map %in% c("biological_process", "molecular_function", "cellular_component")){
       r2d3(data = data_to_json(serverValues$dat_sankey), script = "js_scripts/all_tabs.js", 
            d3_version = 5, 
            dependencies = c("js_scripts/sankey/d3-sankey.js",
@@ -2512,11 +2806,44 @@ server <-  function(input, output, session) {
                           "font_size" = input$font_size,
                           "which_camp" = "ont_map",
                           textcol_bg = serverValues$textcol_bg,
-                          togg_border = input$togg_border
+                          togg_border = input$togg_border,
+                          togg_label = input$togg_label
                           ),
            options(r2d3.theme = list(
              background = serverValues$col_bg,
              foreground = serverValues$textcol_bg)))
+    }
+  })
+  
+  output$ont_map_below <- renderUI({
+    if(!is.null(serverValues$ont_map_below_text)){
+      if (serverValues$is_go){
+        serverValues$ont_map_below_text
+      } else {
+        HTML("Click on a GO Term for a link to more information about that GO Term, as well as enrichment information for that term for the selected AC category.")
+      }
+    } else {
+      HTML("Click on a GO Term for a link to more information about that GO Term, as well as enrichment information for that term for the selected AC category.")
+    }
+  })
+  
+  output$ont_nav_below <- renderUI({
+    if(!is.null(serverValues$ont_nav_below_text)){
+      if (serverValues$is_go){
+        serverValues$ont_nav_below_text
+      } else {
+        HTML("Click on a GO Term for a link to more information about that GO Term. Click on an AC group's bar text to get enrichment information for that term for the selected AC category.")
+      }
+    } else  {
+      HTML("Click on a GO Term for a link to more information about that GO Term. Click on an AC group's bar text to get enrichment information for that term for the selected AC category.")
+    }
+  })
+  
+  output$group_comp_below <- renderUI({
+    if(!is.null(serverValues$group_comp_below_text)){
+      serverValues$group_comp_below_text
+    } else  {
+      HTML("")
     }
   })
   
@@ -2611,17 +2938,18 @@ server <-  function(input, output, session) {
   
   output$user_data_info <- renderPrint({
     cat("")
-    cat("User Inputs:\n")
+    cat("User ENCORE Inputs:\n")
     cat(paste("ENCORE End Date and Time: ",user_input_ont$save_date,"\n"))
     cat(paste("Original File Name: ",user_input_ont$orig_filen,"\n"))
     cat(paste("Save File Name: ",user_input_ont$save_filen,"\n"))
-    cat(paste("Organism Taxonomy Number: ",user_input_ont$org_tax,"\n"))
-    cat(paste("Gene Name ID Type: ",user_input_ont$id_type,"\n"))
+    cat(paste("Organism: ",id_to_common[user_input_ont$org_tax],"\n")) # YOU SHOULD TAKE THE NAME OF THIS
+    cat(paste("Gene Name ID Type: ",user_input_ont$id_type,"\n")) # YOU SHOULD TAKE THE NAME OF THIS
+    cat(paste("Genes to Focus Enrichment On: ", paste(user_input_ont$gene_focus, collapse = " "),"\n"))
+    cat(paste("Ontology Types to Compute: ",user_input_ont$ont_group,"\n"))
     cat(paste("ECHO P-Value Category: ",user_input_ont$pval_cat,"\n"))
     cat(paste("ECHO Significance Cutoff: ",user_input_ont$sig_level,"\n"))
     cat(paste("Ontology P-Value Category: ",user_input_ont$ont_pval_cat,"\n"))
     cat(paste("Ontology Significance Cutoff: ",user_input_ont$ont_sig_level,"\n"))
-    cat(paste("PUT MORE HERE"))
     cat(paste("Period Restriction, Low Value: ",user_input_ont$low_range,"\n"))
     cat(paste("Period Restriction, High Value: ",user_input_ont$high_range,"\n"))
   })
@@ -2646,6 +2974,14 @@ server <-  function(input, output, session) {
     
     missing_genes <- c()
     
+    # get gene ids
+    
+    gene_focus <- strsplit(input$gene_focus,"\n", fixed=T)[[1]]
+    gene_focus <- gene_focus[!duplicated(gene_focus)]
+    if (sum(nchar(gene_focus)) == 0){
+      gene_focus <- map_sub.df$query
+    }
+    
     # first, save all user inputs
     user_input_ont <<- list(
       "save_date" = Sys.time(),
@@ -2658,7 +2994,9 @@ server <-  function(input, output, session) {
       "ont_pval_cat" = input$ont_pval_cat,
       "ont_sig_level" = input$ont_sig_level,
       "low_range" = input$low_range,
-      "high_range" = input$high_range
+      "high_range" = input$high_range,
+      "ont_group" = input$ont_group,
+      "gene_focus" = gene_focus
     )
     
     
@@ -2814,14 +3152,6 @@ server <-  function(input, output, session) {
     map_sub.df <<- map_sub.df
     
     # get gene ontology enrichments for each fc category
-    
-    # get gene ids
-    
-    gene_focus <- strsplit(input$gene_focus,"\n", fixed=T)[[1]]
-    gene_focus <- gene_focus[!duplicated(gene_focus)]
-    if (sum(nchar(gene_focus)) == 0){
-      gene_focus <- map_sub.df$query
-    }
     
     ont_list <- get_fc_results(input$org_tax,
                                input$pval_cat,
