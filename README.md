@@ -41,7 +41,7 @@ Steps:
 | Saccharomyces cerevisiae  | 4932  |
 | Escherichia coli K12 substr MG1655  | 511145  |
 
-Enter your organism’s name in the ‘choose an organism’ box and click update. You should then see the taxonomy number preceding the file names. Download the file called TAX#.protein.links.v11.0.txt.gz.
+Enter your organism’s name in the ‘choose an organism’ box and click update. You should then see the taxonomy number preceding the file names. Download the file called TAX#.protein.links.vVERS#.txt.gz. At the time of this README, the VERS# (version number) is 11.0. If you download a different version number (such as 10.5), you will need to change the encore_app.R file slightly, which is addressed in step 8 below.
 
 3.	~ Once you’ve downloaded that file, extract the text file. (If using Windows, you may need to download an alternative unzip program that can unzip .gz files, such as [7Zip](https://www.7-zip.org/).) Place that text file, unaltered, in the ‘links’ folder of the ‘ENCORE Shiny App’ Folder.
 
@@ -83,7 +83,9 @@ BiocManager::install("org.Sc.sgd.db")
 
 This will install these packages (a set of functions that this application uses) onto your computer. This may ask for your input, so just say no to the questions asked. If you run into errors saying “no,” just say yes instead. Note: this may take some time.
 
-8.	Open encore_app.R, which should be included in the .zip file you downloaded and also contained this README. It should open in the top left window of your RStudio session.
+8.	Open encore_app.R, which should be included in the .zip file you downloaded and also contained this README. It should open in the top left window of your RStudio session. 
+
+If you downloaded a version of STRING that was NOT 11.0, make the following edit to the encore_app.R file. Under the data versions section (`# data versions ----`), you should see `vers_string <- "11.0"`. Replace that 11.0 with your version, *exactly as written in your filename that you downloaded from STRING* (i.e. "TAX#.protein.links.v11.1.txt.gz" would result in putting 11.1 in the code).
 
 9.	In the top right corner of the encore_app.R window, you should see the button, “Run App”. Click on the small downwards arrow next to it and choose “Run External”. 
 
