@@ -14,7 +14,7 @@ rm(list=ls())
 
 # data versions ----
 
-vers_encore <- "3.0"
+vers_encore <- "3.0.1"
 vers_string <- "11.0"
 
 # preload ----
@@ -601,7 +601,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                 #inline .form-group { display: table-row;}")
         ),
         
-        tags$p(HTML("<b>Note: Instructions can be found in the 'Instructions' tab.</b> * indicates inputs that will automatically change visualizations upon change. <b>It is also strongly recommended that your computer is plugged in to run this application.</b>")),
+        tags$p(HTML("<b>Note: Instructions can be found in the 'Instructions' tab.</b> For selections, * indicates inputs that will automatically change visualizations upon change. <b>It is also strongly recommended that your computer is plugged in to run this application.</b>")),
         
         tags$p(paste("ENCORE Version:", vers_encore)),
         
@@ -691,7 +691,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                       label = "Turn on dark mode visualizations?*",
                       value = F),
         checkboxInput(inputId = "togg_fit",
-                      label = "Show ECHO fitted values in heatmaps?*",
+                      label = "Show ECHO fitted values in heatmaps?",
                       value = F),
         checkboxInput(inputId = "togg_sig_groups",
                       label = "Only show genes in groups significantly enriched for the GO Term in chord diagrams?",
@@ -1043,13 +1043,24 @@ server <-  function(input, output, session) {
       map_sub.df$Osc.Type <- as.character(map_sub.df$Osc.Type)
       
       # making backwards compatible (<v3)
+      
       if (is.null(user_input_ont$ont_group)){
-        user_input_ont$ont_group <<- "NOT SAVED BEFORE v3 (likewise for focused genes, which defaults to all)"
-      } 
+        user_input_ont$ont_group <<- "NOT SAVED BEFORE v3 (likewise for focused genes; both default to all)"
+        ont_avail <<- c("Biological Process" = "BP",
+                        "Cellular Component" = "CC",
+                        "Molecular Function"= "MF")
+      } else {
+        ont_avail <<- user_input_ont$ont_group
+        names(ont_avail) <<- ont_map[ont_avail]
+      }
       
       if (is.null(user_input_ont$gene_focus)){
-        user_input_ont$gene_focus <<- map_sub.df$query
+        user_input_ont$gene_focus <<- map_sub.df$entrezgene
       } 
+      
+      updateSelectInput(session, "ont",
+                        label = "Which type of ontology would you like to explore?",
+                        choices = ont_avail)
       
       if (exists("fc_results") & !is.null(links)){
         if (!input$fc_map %in% no_sig[[input$ont]]){
@@ -1081,15 +1092,10 @@ server <-  function(input, output, session) {
       
       bg <<- read.csv(paste0("data//",input$org_select,"_background.csv"), stringsAsFactors = F)
       
-      # if (input$org_select == "5141"){
-      #   # begin_url <<- "http://fungidb.org/fungidb/app/record/gene/"
-      #   # begin_url <<- "https://www.ncbi.nlm.nih.gov/gene/?term="
-      #   # end_url <<- ""
-      # } 
-      # else {
-      #   begin_url <<- "https://www.genecards.org/cgi-bin/carddisp.pl?gene="
-      # }
-      # 
+      updateSelectInput(session, "ont",
+                        label = "Which type of ontology would you like to explore?",
+                        choices = ont_avail)
+      
       if (exists("fc_results") & !is.null(links)){
         if (!input$fc_map %in% no_sig[[input$ont]]){
           all_terms <- fc_results[[input$fc_map]][[input$ont]][["go_results"]]$Term
@@ -1411,7 +1417,9 @@ server <-  function(input, output, session) {
         # sort by highest to lowest combined score
         temp <- temp[order(-combined_score),]
         # get rid of reverse duplicates, since doing birectional
-        temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        if (nrow(temp) > 0){
+          temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        }
         
         # at the moment, the threshold is 0
         thresh <- as.numeric(temp[nrow(temp),"combined_score"])
@@ -1617,7 +1625,7 @@ server <-  function(input, output, session) {
             )
         }
         
-        if (!grepl("\\(", path_trace[length(path_trace)])){
+        if (nrow(serverValues$chord_dat) & !grepl("\\(", path_trace[length(path_trace)])){
           path_trace[length(path_trace)] <<- paste0(path_trace[length(path_trace)]," (",nrow(connect.df)," genes, ",sum(serverValues$chord_dat)/2," chords)")
         }
       }
@@ -1783,7 +1791,9 @@ server <-  function(input, output, session) {
         # sort by highest to lowest combined score
         temp <- temp[order(-combined_score),]
         # get rid of reverse duplicates, since doing birectional
-        temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        if (nrow(temp) > 0){
+          temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        }
         
         # at the moment, the threshold is 0
         thresh <- as.numeric(temp[nrow(temp),"combined_score"])
@@ -1993,7 +2003,7 @@ server <-  function(input, output, session) {
         }
       }
       
-      if (!grepl("\\(", path_trace[length(path_trace)])){
+      if (nrow(serverValues$chord_dat) & !grepl("\\(", path_trace[length(path_trace)])){
         path_trace[length(path_trace)] <<- paste0(path_trace[length(path_trace)]," (",nrow(connect.df)," genes, ",sum(serverValues$chord_dat)/2," chords)")
       }
       
@@ -2170,7 +2180,9 @@ server <-  function(input, output, session) {
         # sort by highest to lowest combined score
         temp <- temp[order(-combined_score),]
         # get rid of reverse duplicates, since doing birectional
-        temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        if (nrow(temp) > 0){
+          temp <- temp[!duplicated(t(apply(temp[,1:2], 1, sort))), ]
+        }
         
         # at the moment, the threshold is 0
         thresh <- as.numeric(temp[nrow(temp),"combined_score"])
@@ -2376,7 +2388,7 @@ server <-  function(input, output, session) {
             )
         }
         
-        if (!grepl("\\(", path_trace[length(path_trace)])){
+        if (nrow(serverValues$chord_dat) & !grepl("\\(", path_trace[length(path_trace)])){
           path_trace[length(path_trace)] <<- paste0(path_trace[length(path_trace)]," (",nrow(connect.df)," genes, ",sum(serverValues$chord_dat)/2," chords)")
         }
       }
@@ -2464,10 +2476,10 @@ server <-  function(input, output, session) {
     
     if (!is_all_range){
       map_intr_sub <- map_intr[map_intr$Osc.Type %in% f & map_intr[[user_input_ont$pval_cat]] < user_input_ont$sig_level &
-                                 map_intr$Period <= high_range & map_intr$Period >= low_range & map_intr$query %in% user_input_ont$gene_focus,]
+                                 map_intr$Period <= high_range & map_intr$Period >= low_range & map_intr$entrezgene %in% user_input_ont$gene_focus,]
     } else {
       map_intr_sub <- map_intr[map_intr$Osc.Type %in% f & map_intr[[user_input_ont$pval_cat]] < user_input_ont$sig_level & 
-                                 map_intr$query %in% user_input_ont$gene_focus,]
+                                 map_intr$entrezgene %in% user_input_ont$gene_focus,]
     }
     go_genes_sig <- map_intr_sub$query[!is.na(map_intr_sub$query)]
     
@@ -2577,10 +2589,10 @@ server <-  function(input, output, session) {
     
     if (!is_all_range){
       map_intr_sub <- map_intr[map_intr$Osc.Type %in% f_repl & map_intr[[user_input_ont$pval_cat]] < user_input_ont$sig_level &
-                                 map_intr$Period <= high_range & map_intr$Period >= low_range & map_intr$query %in% user_input_ont$gene_focus,]
+                                 map_intr$Period <= high_range & map_intr$Period >= low_range & map_intr$entrezgene %in% user_input_ont$gene_focus,]
     } else {
       map_intr_sub <- map_intr[map_intr$Osc.Type %in% f_repl & map_intr[[user_input_ont$pval_cat]] < user_input_ont$sig_level & 
-                                 map_intr$query %in% user_input_ont$gene_focus,]
+                                 map_intr$entrezgene %in% user_input_ont$gene_focus,]
     }
     go_genes_sig <- map_intr_sub$query[!is.na(map_intr_sub$query)]
     
