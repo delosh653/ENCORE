@@ -14,7 +14,7 @@ rm(list=ls())
 
 # data versions ----
 
-vers_encore <- "3.0.1"
+vers_encore <- "3.0.2"
 vers_string <- "11.0"
 
 # preload ----
@@ -1530,7 +1530,7 @@ server <-  function(input, output, session) {
               hm_mat <- as.matrix(int_sub_tr[,(end_num+length(timen)*num_reps+1):ncol(int_sub_tr)])
               
             }
-            
+            rownames(hm_mat) <- int_sub_tr[,1]
             #normalize each row to be between -1 and 1
             for (i in 1:nrow(int_sub_tr)){
               gene_max <- max(abs((hm_mat[i,])),na.rm = TRUE)
@@ -1543,7 +1543,6 @@ server <-  function(input, output, session) {
             } else {
               ord <- 1
             }
-            
             hm_total[(count_next+1):(count_next+nrow(hm_mat)),] <- hm_mat
             hm_order[(count_next+1):(count_next+nrow(hm_mat))] <- which(int_tr$`Oscillation Type` == f)[ord]
             hm_names[(count_next+1):(count_next+nrow(hm_mat))] <- int_sub_tr$`Gene Name`[ord]
@@ -1556,9 +1555,9 @@ server <-  function(input, output, session) {
         # making the heat map a data frame
         heat.df <- as.data.frame(hm_total)
         colnames(heat.df) <- paste0("TP_",timen)
-        if (nrow(heat.df) > 0){
-          heat.df <- heat.df[seq(nrow(heat.df),1,-1),]
-        }
+        # if (nrow(heat.df) > 0){
+        #   heat.df <- heat.df[seq(nrow(heat.df),1,-1),]
+        # }
         
         # order the connections to the heatmap
         if (nrow(connect.df)>1){
@@ -1930,9 +1929,9 @@ server <-  function(input, output, session) {
         # making the heat map a data frame
         heat.df <- as.data.frame(hm_total)
         colnames(heat.df) <- paste0("TP_",timen)
-        if (nrow(heat.df) > 0){
-          heat.df <- heat.df[seq(nrow(heat.df),1,-1),]
-        }
+        # if (nrow(heat.df) > 0){
+        #   heat.df <- heat.df[seq(nrow(heat.df),1,-1),]
+        # }
         
         # order the connections to the heatmap
         if (nrow(connect.df)>1){
@@ -2319,9 +2318,9 @@ server <-  function(input, output, session) {
         # making the heat map a data frame
         heat.df <- as.data.frame(hm_total)
         colnames(heat.df) <- paste0("TP_",timen)
-        if (nrow(heat.df) > 0){
-          heat.df <- heat.df[seq(nrow(heat.df),1,-1),]
-        }
+        # if (nrow(heat.df) > 0){
+        #   heat.df <- heat.df[seq(nrow(heat.df),1,-1),]
+        # }
         
         # order the connections to the heatmap
         if (nrow(connect.df)>1){
