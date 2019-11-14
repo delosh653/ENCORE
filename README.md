@@ -16,7 +16,7 @@ This is the second step in the PAICE (Pipeline for Amplitude Integration of Circ
 
 ## Overview
 
-ENCORE (ECHO Native Circadian Ontological Ryhtmicity Explorer) is an R-powered Shiny application to navigate and understand the gene function of amplitude change categories for circadian rhythms, using [ECHO](https://github.com/delosh653/ECHO) output.
+ENCORE (ECHO Native Circadian Ontological Rhythmicity Explorer) is an R-powered Shiny application to navigate and understand the gene function of amplitude change categories for circadian rhythms, using [ECHO](https://github.com/delosh653/ECHO) output.
 
 To read more about this work and cite us, please see [ENCORE: A Visualization Tool for Insight into Circadian Omics](https://dl.acm.org/citation.cfm?id=3342137) by H. De los Santos, et al. (2019)
 
