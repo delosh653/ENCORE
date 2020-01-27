@@ -14,7 +14,7 @@ rm(list=ls())
 
 # data versions ----
 
-vers_encore <- "3.0.2"
+vers_encore <- "3.0.3"
 vers_string <- "11.0"
 
 # preload ----
@@ -2989,9 +2989,6 @@ server <-  function(input, output, session) {
     
     gene_focus <- strsplit(input$gene_focus,"\n", fixed=T)[[1]]
     gene_focus <- gene_focus[!duplicated(gene_focus)]
-    if (sum(nchar(gene_focus)) == 0){
-      gene_focus <- map_sub.df$query
-    }
     
     # first, save all user inputs
     user_input_ont <<- list(
@@ -3161,6 +3158,11 @@ server <-  function(input, output, session) {
     
     # push map_sub.df to global to save
     map_sub.df <<- map_sub.df
+    
+    # update gene focus if none specified
+    if (sum(nchar(gene_focus)) == 0){
+      gene_focus <- map_sub.df$query
+    }
     
     # get gene ontology enrichments for each fc category
     
