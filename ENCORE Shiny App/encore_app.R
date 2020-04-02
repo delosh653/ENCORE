@@ -14,7 +14,7 @@ rm(list=ls())
 
 # data versions ----
 
-vers_encore <- "3.0.3"
+vers_encore <- "3.0.4"
 vers_string <- "11.0"
 
 # preload ----
@@ -1054,7 +1054,7 @@ server <-  function(input, output, session) {
         names(ont_avail) <<- ont_map[ont_avail]
       }
       
-      if (is.null(user_input_ont$gene_focus)){
+      if (length(user_input_ont$gene_focus) < 1){
         user_input_ont$gene_focus <<- map_sub.df$entrezgene
       } 
       
