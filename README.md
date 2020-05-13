@@ -4,13 +4,14 @@
 <img src="ENCORE Shiny App/www/ont_map.PNG" width="275" />  <img src="ENCORE Shiny App/www/ont_nav.PNG" width="275" />  <img src="ENCORE Shiny App/www/group_comp.PNG" width="275" />
 </p>
 
-This is the second step in the PAICE (Pipeline for Amplitude Integration of Circadian Exploration) Suite! This suite of tools provides high-throughput applications for circadian, ultradian, and infradian rhythms. The first step, ECHO, can be found [here](https://github.com/delosh653/ECHO), and must be run before using this application.
+This is the second step in the PAICE (Pipeline for Amplitude Integration of Circadian Exploration) Suite! This suite of tools provides high-throughput applications for circadian, ultradian, and infradian rhythms. The first step, ECHO, can be found [here](https://github.com/delosh653/ECHO), and must be run before using this application. The third step, MOSAIC, can be found [here](https://github.com/delosh653/MOSAIC).
 
 ## README Outline
 
 * Overview
 * Use and First-Time Set-Up Instructions
 * ENCORE Features
+* Minimum Version Information
 * Contact Information and Bug Reporting
 * FAQ
 
@@ -140,11 +141,39 @@ When you click on an ontological term in the Ontology Explorer or a gene in the 
 
 Note: further descriptions and instructions appear within the app.
 
+## Minimum Version Information
+
+Minimum versions for packages and sytems used in ECHO are the following:
+
+| Package        | Minimum Version |
+| -------------: |-------------|
+| R | >= 3.5.1 |
+| AnnotationHub | >= 2.14.2|
+| topGO | >= 2.34.0|
+| STRINGdb | >= 1.22.0|
+| r2d3 | >= 0.2.3|
+| data.table | >= 1.11.8|
+| jsonlite | >= 1.6|
+| igraph | >= 1.2.2|
+| stringr | >= 1.3.1|
+| mygene | >= 1.16.2|
+| data.table | >= 1.11.8|
+| AnnotationDbi | >= 1.44.0|
+| org.Ag.eg.db | >= 3.7.0|
+| org.Dm.eg.db | >= 3.7.0|
+| org.Hs.eg.db | >= 3.7.0|
+| org.Mm.eg.db | >= 3.7.0|
+| org.EcK12.eg.db | >= 3.7.0|
+| org.Sc.sgd.db | >= 3.7.0|
+| DBI | >= 1.0.0|
+| shiny | >= 1.3.2 |
+| ggplot2 | >= 3.1.0 |
+
 ## Contact Information and Bug Reporting
 
-As you may have noticed, this is still in beta testing! Therefore, we would love to hear your feedback on the program. For general feedback, email delosh@rpi.edu with the subject line "ENCORE Feedback".
+As you may have noticed, this is still in beta testing! Therefore, we would love to hear your feedback on the program. For general feedback, email hurlej2@rpi.edu with the subject line "ENCORE Feedback".
 
-If you run into any errors, please email delosh@rpi.edu with the following (subject line: "ENCORE Error"): 
+If you run into any errors, please email hurlej2@rpi.edu with the following (subject line: "ENCORE Error"): 
 - a short desciption of your problem
 - ENCORE version number 
 - your ENCORE file 
@@ -155,8 +184,8 @@ If you run into any errors, please email delosh@rpi.edu with the following (subj
 However, please read the FAQ below before sending error reports.
 
 Contact:
-Hannah De los Santos /
-email: delosh@rpi.edu /
+Jennifer Hurley /
+email: hurlej2@rpi.edu /
 Rensselaer Polytechnic Institute
 
 ## FAQ
@@ -164,3 +193,34 @@ Rensselaer Polytechnic Institute
 **Q:** My dataset isn't working for some reason and I'm not using the latest ENCORE version! Why?
 
 **A:** Please update to the current ENCORE version (you can see this at the top of the github repository by checking out what the latest commit was), since this may have been corrected in an update. If this problem persists, feel free to send another email!
+
+---
+
+**Q:** I was running ENCORE, and it suddenly went grey! What happened?
+
+**A:** There was an error, the cause of which can be found in the console. Check through the FAQ to see if it has been addressed, or if it's an obvious error (such as not loading any data).
+
+---
+
+**Q:** I get the following error (or similar) when I try to view the Gene/Term Explorer part of ENCORE:
+
+```r
+DataTables warning: table id=DataTables_Table_0 - Requested unknown parameter '8' for row 0.
+  For more information about this error, please see http://datatables.net/tn/4
+```
+
+**A:** This is a [bug](https://community.rstudio.com/t/data-table-issue-while-rendering-the-shiny-page-datatables-warning-table-id-datatables-table-0-requested-unknown-parameter/44016/3) with Data Tables in Shiny 1.4. To check your version of Shiny, enter the following in the console:
+```r
+packageVersion("shiny")
+```
+This should give you the Shiny version. If you have version 1.4, a quick fix is the following:
+
+1. Open ENCORE's encore_app.R file in RStudio.
+2. Enter `install.packages("DT")` in the console, which will install the DT package.
+3. Add `library(DT)` at the top of the encore_app.R script, on its own line.
+4. Press ctrl/cmd+F, which will open the find and replace tool at the top of the script.
+5. In the left box, which is the "find" box, enter `dataTableOutput`. In the right box, which is the "replace" box, enter `DT::dataTableOutput`. Then click the rightmost button, which says `All`.
+6. After you have done step 3, in the left box, which is the "find" box, enter `renderDataTable`. In the right box, which is the "replace" box, enter `DT::renderDataTable`. Then click the rightmost button, which says `All`.
+7. Press ctrl/cmd+S, which saves the encore_app.R file.
+
+After you've completed all these steps, the problem should be fixed when you run it again!
