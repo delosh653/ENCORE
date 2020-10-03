@@ -14,7 +14,7 @@ rm(list=ls())
 
 # data versions ----
 
-vers_encore <- "3.0.4"
+vers_encore <- "3.1.0"
 vers_string <- "11.0"
 
 # preload ----
@@ -293,7 +293,9 @@ get_fc_results <- function(ont_tax, pval_type, pval_cut, ont_pval_type, ont_pval
           go_test@score[has_2] <- p.adjust(go_test@score[has_2], method = "BH")
         } else if (ont_pval_type == "BY.Adj.P.Value"){
           go_test@score[has_2] <- p.adjust(go_test@score[has_2], method = "BY")
-        } # do not adjust if only pvalue is specified
+        } else if (ont_pval_type == "Bonferroni"){
+          go_test@score[has_2] <- p.adjust(go_test@score[has_2], method = "bonferroni")
+        }# do not adjust if only pvalue is specified
         
         # prune graph based on pvalue
         prune_sg <- prune_dag(go_data@graph, go_test@score, ont_pval_cut)
@@ -749,6 +751,32 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
           # tabPanel("Chord Genes"), # rename this??
           
           tabPanel("Data Information", verbatimTextOutput("user_data_info")),
+          tabPanel("Download Enrichment Tables", 
+             HTML("<br>"),
+             selectInput(inputId = "enrich_fc_group",
+                         label = "Which AC group enrichments would you like to download?",
+                         choices = c("Damped", "Harmonic", "Forced", 
+                                     "Overexpressed", "Repressed",
+                                     "All Circadian (without Overexpressed/Repressed)" = "All.Circ.wo.OE.RE",
+                                     "All Circadian" = "All.Circ")),
+             selectInput(inputId = "enrich_ont",
+                         label = "Which type of ontology would you like to download?",
+                         choices = c("Biological Process" = "BP",
+                                     "Cellular Component" = "CC",
+                                     "Molecular Function"= "MF")),
+             downloadButton("download_enrich_table"),
+             HTML(paste0(
+               "<br><br>Enrichments of GO terms for the selected AC coefficients will be downloaded as a CSV, including the following columns:<br>",
+               "- GO.ID: GO ID<br>",
+               "- GO Term: GO Term<br>",
+               "- Annotated: Number of genes annotated for the given GO Term<br>",
+               "- Significant: Number of genes in the selected group, that are significant by the threshold selected when generating the ENCORE file<br>",
+               "- Expected: Number of genes expected for the given GO Term, given the number of genes in the significant group<br>",
+               "- Adj.P.Value: P-value of enrichment, adjusted by the type selected when generating the ENCORE file<br>",
+               "- Level: Level of GO Term<br>",
+               "- Fold.Enrichment: Fold Enrichment of GO Term (Significant/Expected)<br>"
+              ))
+             ),
           
           # instructions, ontology explorer ----
           
@@ -874,6 +902,7 @@ ui <- navbarPage("ENCORE: ECHO Native Circadian Ontological Rhythmicity Explorer
                         "Choose P-Value adjustment to use for Gene Ontology significance:",
                         c("Benjamini-Hochberg"="BH.Adj.P.Value",
                           "Benjamini-Yekutieli"="BY.Adj.P.Value",
+                          "Bonferroni" = "Bonferroni",
                           "None"="P.Value")),
             numericInput(inputId = "ont_sig_level",
                          label = "Enter significance level for Gene Ontology significance:",
@@ -1056,7 +1085,13 @@ server <-  function(input, output, session) {
       
       if (length(user_input_ont$gene_focus) < 1){
         user_input_ont$gene_focus <<- map_sub.df$entrezgene
-      } 
+        user_input_ont$gene_focus_orig <<- user_input_ont$gene_focus
+      } else {
+        user_input_ont$gene_focus_orig <<- user_input_ont$gene_focus
+        rownames(map_sub.df) <- map_sub.df$query
+        entrez_transform <- map_sub.df[user_input_ont$gene_focus_orig, "entrezgene"]
+        user_input_ont$gene_focus <<- entrez_transform[!is.na(entrez_transform)]
+      }
       
       updateSelectInput(session, "ont",
                         label = "Which type of ontology would you like to explore?",
@@ -2711,6 +2746,23 @@ server <-  function(input, output, session) {
     d3Output("group_comp",width = wid, height = height)
   })
   
+  output$download_enrich_table <- downloadHandler(
+    filename = function() {
+      paste0(input$enrich_fc_group, "_", input$enrich_ont, "_ENCORE_Enrichments_", user_input_ont$save_filen, ".csv")
+    },
+    content = function(file) {
+      if (!input$enrich_fc_group %in% no_sig[[input$enrich_ont]]){
+        enrich_tab <- fc_results[[input$enrich_fc_group]][[input$enrich_ont]]$go_results
+        enrich_tab <- enrich_tab[,-ncol(enrich_tab)]
+        colnames(enrich_tab)[colnames(enrich_tab) == "classicFisher"] <- "Adj.P.Value"
+        
+        write.csv(enrich_tab, file, row.names = FALSE, na = "")
+      } else {
+        write.csv("No Enrichment", file, row.names = FALSE, na = "")
+      }
+    }
+  )
+  
   # now send it off to d3!
   
   output$ont_nav <- renderD3({ 
@@ -2955,7 +3007,7 @@ server <-  function(input, output, session) {
     cat(paste("Save File Name: ",user_input_ont$save_filen,"\n"))
     cat(paste("Organism: ",id_to_common[user_input_ont$org_tax],"\n")) # YOU SHOULD TAKE THE NAME OF THIS
     cat(paste("Gene Name ID Type: ",user_input_ont$id_type,"\n")) # YOU SHOULD TAKE THE NAME OF THIS
-    cat(paste("Genes to Focus Enrichment On: ", paste(user_input_ont$gene_focus, collapse = " "),"\n"))
+    cat(paste("Genes to Focus Enrichment On: ", paste(user_input_ont$gene_focus_orig, collapse = " "),"\n"))
     cat(paste("Ontology Types to Compute: ",user_input_ont$ont_group,"\n"))
     cat(paste("ECHO P-Value Category: ",user_input_ont$pval_cat,"\n"))
     cat(paste("ECHO Significance Cutoff: ",user_input_ont$sig_level,"\n"))
